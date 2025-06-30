@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles, Copy, Calendar } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const CreateContent: React.FC = () => {
   const [prompt, setPrompt] = useState('');
@@ -29,39 +29,20 @@ const CreateContent: React.FC = () => {
     setIsGenerating(true);
     
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer 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',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a professional LinkedIn content creator. Create engaging LinkedIn posts that are ${tone} in tone and ${length} in length. Include relevant hashtags and make the content engaging for professional audiences.`
-            },
-            {
-              role: 'user',
-              content: `Create a LinkedIn post about: ${prompt}`
-            }
-          ],
-          max_tokens: length === 'short' ? 150 : length === 'medium' ? 300 : 500,
-          temperature: 0.7,
-        }),
+      const { data, error } = await supabase.functions.invoke('generate-content', {
+        body: {
+          prompt: `Create a LinkedIn post about: ${prompt}`,
+          tone,
+          length,
+          type: 'content'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate content');
-      }
+      if (error) throw error;
 
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || '';
-      
-      setGeneratedContent(content);
+      setGeneratedContent(data.content);
       toast({
-        title: "Content Generated!",
+        title: "Content Generated! ✨",
         description: "Your LinkedIn post has been created successfully.",
       });
     } catch (error) {
@@ -79,64 +60,70 @@ const CreateContent: React.FC = () => {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedContent);
     toast({
-      title: "Copied!",
+      title: "Copied! 📋",
       description: "Content copied to clipboard.",
     });
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create Content</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">
-          Generate engaging LinkedIn posts using AI
+    <div className="space-y-8 animate-fade-in">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Create Content
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
+          Generate engaging LinkedIn posts using AI ✨
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Input Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Content Settings</CardTitle>
+        <Card className="border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              Content Settings
+            </CardTitle>
             <CardDescription>
               Configure your content preferences and generate your post
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 pt-6">
             <div>
-              <Label htmlFor="prompt">Topic or Prompt</Label>
+              <Label htmlFor="prompt" className="text-sm font-semibold">Topic or Prompt</Label>
               <Textarea
                 id="prompt"
                 placeholder="Enter the topic or idea you want to create content about..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[100px]"
+                className="min-h-[120px] mt-2 border-2 focus:border-blue-500 transition-colors"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="tone">Tone</Label>
+                <Label htmlFor="tone" className="text-sm font-semibold">Tone</Label>
                 <select
                   id="tone"
                   value={tone}
                   onChange={(e) => setTone(e.target.value)}
-                  className="w-full p-2 border border-input rounded-md bg-background"
+                  className="w-full p-3 mt-2 border-2 border-input rounded-md bg-background focus:border-blue-500 transition-colors"
                 >
                   <option value="professional">Professional</option>
                   <option value="casual">Casual</option>
                   <option value="inspirational">Inspirational</option>
                   <option value="educational">Educational</option>
+                  <option value="humorous">Humorous</option>
                 </select>
               </div>
 
               <div>
-                <Label htmlFor="length">Length</Label>
+                <Label htmlFor="length" className="text-sm font-semibold">Length</Label>
                 <select
                   id="length"
                   value={length}
                   onChange={(e) => setLength(e.target.value)}
-                  className="w-full p-2 border border-input rounded-md bg-background"
+                  className="w-full p-3 mt-2 border-2 border-input rounded-md bg-background focus:border-blue-500 transition-colors"
                 >
                   <option value="short">Short</option>
                   <option value="medium">Medium</option>
@@ -148,49 +135,61 @@ const CreateContent: React.FC = () => {
             <Button 
               onClick={generateContent} 
               disabled={isGenerating}
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 h-auto shadow-lg"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Generating Magic...
                 </>
               ) : (
-                'Generate Content'
+                <>
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  Generate Content
+                </>
               )}
             </Button>
           </CardContent>
         </Card>
 
         {/* Output Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Generated Content</CardTitle>
+        <Card className="border-l-4 border-l-purple-500 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+            <CardTitle className="flex items-center gap-2">
+              <Copy className="h-5 w-5 text-purple-600" />
+              Generated Content
+            </CardTitle>
             <CardDescription>
               Your AI-generated LinkedIn post will appear here
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {generatedContent ? (
               <div className="space-y-4">
                 <Textarea
                   value={generatedContent}
                   onChange={(e) => setGeneratedContent(e.target.value)}
-                  className="min-h-[200px]"
+                  className="min-h-[250px] border-2 focus:border-purple-500 transition-colors"
                   placeholder="Your generated content will appear here..."
                 />
-                <div className="flex space-x-2">
-                  <Button onClick={copyToClipboard} variant="outline">
+                <div className="flex space-x-3">
+                  <Button onClick={copyToClipboard} variant="outline" className="flex-1 border-2 hover:bg-gray-50">
+                    <Copy className="mr-2 h-4 w-4" />
                     Copy to Clipboard
                   </Button>
-                  <Button className="bg-primary hover:bg-primary/90">
+                  <Button className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
+                    <Calendar className="mr-2 h-4 w-4" />
                     Schedule Post
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="min-h-[200px] flex items-center justify-center text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-md">
-                Generated content will appear here
+              <div className="min-h-[250px] flex items-center justify-center text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-md bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+                <div className="text-center">
+                  <Sparkles className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                  <p className="text-lg font-medium">Generated content will appear here</p>
+                  <p className="text-sm text-gray-400 mt-1">Start by entering a topic above</p>
+                </div>
               </div>
             )}
           </CardContent>

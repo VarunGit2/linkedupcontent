@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Lightbulb } from 'lucide-react';
+import { Loader2, Lightbulb, Target, Briefcase } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const GenerateIdeas: React.FC = () => {
   const [industry, setIndustry] = useState('');
@@ -29,40 +30,20 @@ const GenerateIdeas: React.FC = () => {
     setIsGenerating(true);
     
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer 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',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a creative content strategist specializing in LinkedIn content. Generate engaging, relevant, and professional LinkedIn post ideas that will drive engagement and provide value to the professional community.'
-            },
-            {
-              role: 'user',
-              content: `Generate 8 creative LinkedIn post ideas for someone in the ${industry} industry. ${interests ? `Their interests include: ${interests}.` : ''} ${targetAudience ? `Their target audience is: ${targetAudience}.` : ''} Each idea should be engaging and professional. Return only the ideas, one per line, without numbering.`
-            }
-          ],
-          max_tokens: 500,
-          temperature: 0.8,
-        }),
+      const { data, error } = await supabase.functions.invoke('generate-content', {
+        body: {
+          prompt: `Generate 8 creative LinkedIn post ideas for someone in the ${industry} industry. ${interests ? `Their interests include: ${interests}.` : ''} ${targetAudience ? `Their target audience is: ${targetAudience}.` : ''} Each idea should be engaging and professional.`,
+          type: 'ideas'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate ideas');
-      }
+      if (error) throw error;
 
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || '';
-      const ideaList = content.split('\n').filter(idea => idea.trim().length > 0).slice(0, 8);
+      const ideaList = data.content.split('\n').filter((idea: string) => idea.trim().length > 0).slice(0, 8);
       
       setIdeas(ideaList);
       toast({
-        title: "Ideas Generated!",
+        title: "Ideas Generated! 💡",
         description: `Generated ${ideaList.length} LinkedIn post ideas for you.`,
       });
     } catch (error) {
@@ -80,73 +61,84 @@ const GenerateIdeas: React.FC = () => {
   const useIdea = (idea: string) => {
     navigator.clipboard.writeText(idea);
     toast({
-      title: "Idea Copied!",
+      title: "Idea Copied! 📋",
       description: "The idea has been copied to your clipboard.",
     });
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Generate Blog Ideas</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">
-          Get creative LinkedIn post ideas tailored to your industry and audience
+    <div className="space-y-8 animate-fade-in">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+          Generate Ideas
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
+          Get creative LinkedIn post ideas tailored to your industry 💡
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Input Section */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Tell Us About You</CardTitle>
+        <Card className="lg:col-span-1 border-l-4 border-l-green-500 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-green-600" />
+              Tell Us About You
+            </CardTitle>
             <CardDescription>
               Help us generate personalized content ideas
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 pt-6">
             <div>
-              <Label htmlFor="industry">Industry/Field *</Label>
+              <Label htmlFor="industry" className="text-sm font-semibold flex items-center gap-2">
+                <Briefcase className="h-4 w-4" />
+                Industry/Field *
+              </Label>
               <Input
                 id="industry"
                 placeholder="e.g., Technology, Marketing, Finance"
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
+                className="mt-2 border-2 focus:border-green-500 transition-colors"
               />
             </div>
 
             <div>
-              <Label htmlFor="interests">Interests</Label>
+              <Label htmlFor="interests" className="text-sm font-semibold">Interests</Label>
               <Input
                 id="interests"
                 placeholder="e.g., AI, Leadership, Startups"
                 value={interests}
                 onChange={(e) => setInterests(e.target.value)}
+                className="mt-2 border-2 focus:border-green-500 transition-colors"
               />
             </div>
 
             <div>
-              <Label htmlFor="audience">Target Audience</Label>
+              <Label htmlFor="audience" className="text-sm font-semibold">Target Audience</Label>
               <Input
                 id="audience"
                 placeholder="e.g., Entrepreneurs, Developers, Managers"
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value)}
+                className="mt-2 border-2 focus:border-green-500 transition-colors"
               />
             </div>
 
             <Button 
               onClick={generateIdeas} 
               disabled={isGenerating}
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 h-auto shadow-lg"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Generating Ideas...
                 </>
               ) : (
                 <>
-                  <Lightbulb className="mr-2 h-4 w-4" />
+                  <Lightbulb className="mr-2 h-5 w-5" />
                   Generate Ideas
                 </>
               )}
@@ -156,27 +148,30 @@ const GenerateIdeas: React.FC = () => {
 
         {/* Ideas Section */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Content Ideas</CardTitle>
+          <Card className="border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-blue-600" />
+                Your Content Ideas
+              </CardTitle>
               <CardDescription>
                 Click on any idea to copy it to your clipboard
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {ideas.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {ideas.map((idea, index) => (
                     <div
                       key={index}
                       onClick={() => useIdea(idea)}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary hover:bg-primary/5 cursor-pointer transition-all duration-200 group"
+                      className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 cursor-pointer transition-all duration-200 group shadow-sm hover:shadow-md"
                     >
                       <div className="flex items-start justify-between">
-                        <p className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary pr-4">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-700 dark:group-hover:text-blue-300 pr-4 font-medium">
                           {idea}
                         </p>
-                        <Badge variant="secondary" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Badge variant="secondary" className="opacity-0 group-hover:opacity-100 transition-opacity bg-blue-100 text-blue-700 hover:bg-blue-200">
                           Click to Copy
                         </Badge>
                       </div>
@@ -184,10 +179,11 @@ const GenerateIdeas: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="min-h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-md">
+                <div className="min-h-[400px] flex items-center justify-center text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-md bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
                   <div className="text-center">
-                    <Lightbulb className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                    <p>Your generated ideas will appear here</p>
+                    <Lightbulb className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+                    <p className="text-lg font-medium">Your generated ideas will appear here</p>
+                    <p className="text-sm text-gray-400 mt-1">Fill in your details and click generate</p>
                   </div>
                 </div>
               )}

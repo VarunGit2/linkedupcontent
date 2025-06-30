@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import CreateContent from '@/components/CreateContent';
 import GenerateIdeas from '@/components/GenerateIdeas';
 import SchedulePosts from '@/components/SchedulePosts';
+import ProfileSettings from '@/components/ProfileSettings';
 import Chatbot from '@/components/Chatbot';
 import SuggestionBox from '@/components/SuggestionBox';
 import Footer from '@/components/Footer';
@@ -36,6 +37,8 @@ const Index = () => {
         return <GenerateIdeas />;
       case 'schedule-posts':
         return <SchedulePosts />;
+      case 'profile-settings':
+        return <ProfileSettings user={user!} />;
       default:
         return <CreateContent />;
     }
@@ -46,7 +49,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       <DashboardLayout
         user={user!}
         onLogout={handleLogout}
@@ -59,11 +62,10 @@ const Index = () => {
           {/* Suggestion Button */}
           <Button
             onClick={() => setShowSuggestionBox(true)}
-            className="fixed bottom-6 left-6 bg-green-600 hover:bg-green-700 shadow-lg z-40"
+            className="fixed bottom-6 left-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-xl z-40 rounded-full p-3 border-2 border-white dark:border-gray-800"
             size="sm"
           >
-            <Lightbulb className="mr-2 h-4 w-4" />
-            Suggestions
+            <Lightbulb className="h-5 w-5" />
           </Button>
         </div>
       </DashboardLayout>
