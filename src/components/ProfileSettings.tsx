@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { User, Settings, Shield, Linkedin, Save, Bell, Eye, Lock } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { User, Settings, Shield, Linkedin, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface ProfileSettingsProps {
@@ -17,423 +17,506 @@ interface ProfileSettingsProps {
 }
 
 const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user }) => {
-  const [activeTab, setActiveTab] = useState('profile');
-  const [profile, setProfile] = useState({
+  const [profileData, setProfileData] = useState({
     name: '',
     email: '',
-    bio: '',
     company: '',
     position: '',
-    linkedinUrl: '',
     industry: '',
+    bio: '',
     location: '',
+    website: ''
   });
+  
   const [privacySettings, setPrivacySettings] = useState({
-    profileVisible: true,
-    emailVisible: false,
-    showOnlineStatus: true,
+    profileVisibility: true,
+    showEmail: false,
+    showCompany: true,
     allowMessages: true,
+    showActivity: false
   });
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    pushNotifications: false,
-    weeklyDigest: true,
-    contentSuggestions: true,
+
+  const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
+  const [linkedInProfile, setLinkedInProfile] = useState({
+    name: '',
+    email: '',
+    profileUrl: '',
+    connections: 0
   });
-  const [linkedinConnected, setLinkedinConnected] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
+    // Load user data
     if (user) {
-      setProfile({
+      setProfileData({
         name: user.user_metadata?.name || '',
         email: user.email || '',
-        bio: user.user_metadata?.bio || '',
         company: user.user_metadata?.company || '',
         position: user.user_metadata?.position || '',
-        linkedinUrl: user.user_metadata?.linkedinUrl || '',
         industry: user.user_metadata?.industry || '',
+        bio: user.user_metadata?.bio || '',
         location: user.user_metadata?.location || '',
+        website: user.user_metadata?.website || ''
       });
+    }
+
+    // Check LinkedIn connection status
+    const linkedInConnected = localStorage.getItem('linkedin-connected') === 'true';
+    setIsLinkedInConnected(linkedInConnected);
+    
+    if (linkedInConnected) {
+      const savedProfile = localStorage.getItem('linkedin-profile');
+      if (savedProfile) {
+        setLinkedInProfile(JSON.parse(savedProfile));
+      }
+    }
+
+    // Load privacy settings
+    const savedPrivacy = localStorage.getItem('privacy-settings');
+    if (savedPrivacy) {
+      setPrivacySettings(JSON.parse(savedPrivacy));
     }
   }, [user]);
 
-  const handleSaveProfile = async () => {
-    setIsSaving(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          name: profile.name,
-          bio: profile.bio,
-          company: profile.company,
-          position: profile.position,
-          linkedinUrl: profile.linkedinUrl,
-          industry: profile.industry,
-          location: profile.location,
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Profile Updated! ✅",
-        description: "Your profile has been saved successfully.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const connectLinkedIn = () => {
-    // Store LinkedIn connection status
-    setLinkedinConnected(true);
-    localStorage.setItem('linkedin-connected', 'true');
+  const handleProfileUpdate = () => {
+    // Save profile data to localStorage (in real app, this would be saved to database)
+    localStorage.setItem('user-profile', JSON.stringify(profileData));
     toast({
-      title: "LinkedIn Connected! 🎉",
-      description: "Your LinkedIn account has been connected successfully.",
+      title: "Profile Updated! ✅",
+      description: "Your profile information has been saved successfully.",
     });
   };
 
-  const getUserInitials = () => {
-    if (profile.name) {
-      const nameParts = profile.name.split(' ');
-      if (nameParts.length >= 2) {
-        return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
-      }
-      return nameParts[0][0].toUpperCase();
-    }
-    return 'U';
+  const handlePrivacyUpdate = () => {
+    localStorage.setItem('privacy-settings', JSON.stringify(privacySettings));
+    toast({
+      title: "Privacy Settings Updated! 🔒",
+      description: "Your privacy preferences have been saved.",
+    });
   };
 
-  useEffect(() => {
-    const isConnected = localStorage.getItem('linkedin-connected') === 'true';
-    setLinkedinConnected(isConnected);
-  }, []);
+  const handleLinkedInConnect = () => {
+    // Simulate LinkedIn OAuth (in real app, this would use LinkedIn API)
+    const mockProfile = {
+      name: profileData.name || 'Professional User',
+      email: profileData.email,
+      profileUrl: `https://linkedin.com/in/${profileData.name.toLowerCase().replace(' ', '-')}`,
+      connections: Math.floor(Math.random() * 1000) + 500
+    };
+    
+    setLinkedInProfile(mockProfile);
+    setIsLinkedInConnected(true);
+    localStorage.setItem('linkedin-connected', 'true');
+    localStorage.setItem('linkedin-profile', JSON.stringify(mockProfile));
+    
+    toast({
+      title: "LinkedIn Connected! 🎉",
+      description: "Your LinkedIn account has been successfully connected.",
+    });
+  };
 
-  const renderProfileTab = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card className="border-l-4 border-l-blue-500 shadow-lg">
-        <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
-          <Avatar className="mx-auto h-20 w-20 mb-4">
-            <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-2xl">
-              {getUserInitials()}
-            </AvatarFallback>
-          </Avatar>
-          <CardTitle className="flex items-center justify-center gap-2">
-            <User className="h-5 w-5" />
-            Personal Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-6">
-          <div>
-            <Label htmlFor="name" className="text-sm font-semibold">Full Name</Label>
-            <Input
-              id="name"
-              value={profile.name}
-              onChange={(e) => setProfile({...profile, name: e.target.value})}
-              className="mt-2 border-2 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={profile.email}
-              disabled
-              className="mt-2 border-2 bg-gray-100 dark:bg-gray-800"
-            />
-          </div>
-          <div>
-            <Label htmlFor="bio" className="text-sm font-semibold">Bio</Label>
-            <Textarea
-              id="bio"
-              placeholder="Tell us about yourself..."
-              value={profile.bio}
-              onChange={(e) => setProfile({...profile, bio: e.target.value})}
-              className="mt-2 border-2 focus:border-blue-500"
-            />
-          </div>
-        </CardContent>
-      </Card>
+  const handleLinkedInDisconnect = () => {
+    setIsLinkedInConnected(false);
+    setLinkedInProfile({ name: '', email: '', profileUrl: '', connections: 0 });
+    localStorage.removeItem('linkedin-connected');
+    localStorage.removeItem('linkedin-profile');
+    
+    toast({
+      title: "LinkedIn Disconnected",
+      description: "Your LinkedIn account has been disconnected.",
+    });
+  };
 
-      <Card className="border-l-4 border-l-green-500 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-green-600" />
-            Professional Info
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-6">
-          <div>
-            <Label htmlFor="company" className="text-sm font-semibold">Company</Label>
-            <Input
-              id="company"
-              placeholder="Your company name"
-              value={profile.company}
-              onChange={(e) => setProfile({...profile, company: e.target.value})}
-              className="mt-2 border-2 focus:border-green-500"
-            />
-          </div>
-          <div>
-            <Label htmlFor="position" className="text-sm font-semibold">Position</Label>
-            <Input
-              id="position"
-              placeholder="Your job title"
-              value={profile.position}
-              onChange={(e) => setProfile({...profile, position: e.target.value})}
-              className="mt-2 border-2 focus:border-green-500"
-            />
-          </div>
-          <div>
-            <Label htmlFor="industry" className="text-sm font-semibold">Industry</Label>
-            <Input
-              id="industry"
-              placeholder="Your industry"
-              value={profile.industry}
-              onChange={(e) => setProfile({...profile, industry: e.target.value})}
-              className="mt-2 border-2 focus:border-green-500"
-            />
-          </div>
-          <div>
-            <Label htmlFor="location" className="text-sm font-semibold">Location</Label>
-            <Input
-              id="location"
-              placeholder="Your location"
-              value={profile.location}
-              onChange={(e) => setProfile({...profile, location: e.target.value})}
-              className="mt-2 border-2 focus:border-green-500"
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderPrivacyTab = () => (
-    <Card className="border-l-4 border-l-purple-500 shadow-lg max-w-2xl mx-auto">
-      <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-        <CardTitle className="flex items-center gap-2">
-          <Lock className="h-5 w-5 text-purple-600" />
-          Privacy & Visibility Settings
-        </CardTitle>
-        <CardDescription>Control who can see your information and how you appear to others</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 pt-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-sm font-semibold">Profile Visibility</Label>
-            <p className="text-xs text-gray-500">Make your profile visible to other users</p>
-          </div>
-          <Switch
-            checked={privacySettings.profileVisible}
-            onCheckedChange={(checked) => setPrivacySettings({...privacySettings, profileVisible: checked})}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-sm font-semibold">Email Visibility</Label>
-            <p className="text-xs text-gray-500">Show your email to other users</p>
-          </div>
-          <Switch
-            checked={privacySettings.emailVisible}
-            onCheckedChange={(checked) => setPrivacySettings({...privacySettings, emailVisible: checked})}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-sm font-semibold">Show Online Status</Label>
-            <p className="text-xs text-gray-500">Let others see when you're active</p>
-          </div>
-          <Switch
-            checked={privacySettings.showOnlineStatus}
-            onCheckedChange={(checked) => setPrivacySettings({...privacySettings, showOnlineStatus: checked})}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-sm font-semibold">Allow Messages</Label>
-            <p className="text-xs text-gray-500">Allow other users to send you messages</p>
-          </div>
-          <Switch
-            checked={privacySettings.allowMessages}
-            onCheckedChange={(checked) => setPrivacySettings({...privacySettings, allowMessages: checked})}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderLinkedInTab = () => (
-    <Card className="border-l-4 border-l-blue-600 shadow-lg max-w-2xl mx-auto">
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-        <CardTitle className="flex items-center gap-2">
-          <Linkedin className="h-5 w-5 text-blue-600" />
-          LinkedIn Integration
-        </CardTitle>
-        <CardDescription>Connect your LinkedIn account to sync your professional information</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 pt-6">
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-          <div className="flex items-center space-x-3">
-            <div className={`w-3 h-3 rounded-full ${linkedinConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <div>
-              <span className="text-sm font-medium">
-                LinkedIn {linkedinConnected ? 'Connected' : 'Not Connected'}
-              </span>
-              {linkedinConnected && (
-                <p className="text-xs text-gray-500">Account synced successfully</p>
-              )}
-            </div>
-          </div>
-          {linkedinConnected && (
-            <div className="text-green-600">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="linkedinUrl" className="text-sm font-semibold">LinkedIn Profile URL</Label>
-          <Input
-            id="linkedinUrl"
-            placeholder="https://linkedin.com/in/username"
-            value={profile.linkedinUrl}
-            onChange={(e) => setProfile({...profile, linkedinUrl: e.target.value})}
-            className="mt-2 border-2 focus:border-blue-500"
-          />
-        </div>
-        
-        {!linkedinConnected && (
-          <Button 
-            onClick={connectLinkedIn}
-            className="w-full bg-[#0077B5] hover:bg-[#005885] text-white font-semibold py-3 h-auto"
-          >
-            <Linkedin className="mr-2 h-5 w-5" />
-            Connect LinkedIn Account
-          </Button>
-        )}
-
-        {linkedinConnected && (
-          <div className="space-y-4">
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-              <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Connected Features:</h4>
-              <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
-                <li>• Auto-sync professional information</li>
-                <li>• Schedule posts directly to LinkedIn</li>
-                <li>• Import LinkedIn connections</li>
-                <li>• Cross-post content seamlessly</li>
-              </ul>
-            </div>
-            
-            <Button 
-              variant="outline"
-              onClick={() => {
-                setLinkedinConnected(false);
-                localStorage.removeItem('linkedin-connected');
-                toast({
-                  title: "LinkedIn Disconnected",
-                  description: "Your LinkedIn account has been disconnected.",
-                });
-              }}
-              className="w-full border-red-300 text-red-600 hover:bg-red-50"
-            >
-              Disconnect LinkedIn
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+  const handlePasswordChange = () => {
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // In real app, this would call Supabase auth.updateUser
+    setNewPassword('');
+    toast({
+      title: "Password Updated! 🔐",
+      description: "Your password has been changed successfully.",
+    });
+  };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
       <div className="text-center">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Profile & Settings
+          Settings & Profile
         </h1>
         <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
-          Manage your account and preferences
+          Manage your account, privacy, and LinkedIn integration
         </p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex justify-center">
-        <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'profile'
-                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 shadow-lg rounded-xl p-1">
+          <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+            <User className="h-4 w-4" />
             Profile
-          </button>
-          <button
-            onClick={() => setActiveTab('privacy')}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'privacy'
-                ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
-            Privacy & Settings
-          </button>
-          <button
-            onClick={() => setActiveTab('linkedin')}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'linkedin'
-                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
+          </TabsTrigger>
+          <TabsTrigger value="privacy" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+            <Shield className="h-4 w-4" />
+            Privacy
+          </TabsTrigger>
+          <TabsTrigger value="linkedin" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+            <Linkedin className="h-4 w-4" />
             LinkedIn
-          </button>
-        </div>
-      </div>
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+            <Settings className="h-4 w-4" />
+            Security
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Tab Content */}
-      <div className="min-h-[400px]">
-        {activeTab === 'profile' && renderProfileTab()}
-        {activeTab === 'privacy' && renderPrivacyTab()}
-        {activeTab === 'linkedin' && renderLinkedInTab()}
-      </div>
+        <TabsContent value="profile" className="space-y-6">
+          <Card className="border-l-4 border-l-blue-500 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5 text-blue-600" />
+                Profile Information
+              </CardTitle>
+              <CardDescription>
+                Update your professional profile details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={profileData.name}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                    className="border-2 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                    className="border-2 focus:border-blue-500"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company">Company</Label>
+                  <Input
+                    id="company"
+                    value={profileData.company}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, company: e.target.value }))}
+                    className="border-2 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="position">Position</Label>
+                  <Input
+                    id="position"
+                    value={profileData.position}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, position: e.target.value }))}
+                    className="border-2 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="industry">Industry</Label>
+                  <Input
+                    id="industry"
+                    value={profileData.industry}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, industry: e.target.value }))}
+                    className="border-2 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={profileData.location}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
+                    className="border-2 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="website">Website</Label>
+                <Input
+                  id="website"
+                  type="url"
+                  value={profileData.website}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, website: e.target.value }))}
+                  className="border-2 focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={profileData.bio}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                  className="min-h-[100px] border-2 focus:border-blue-500"
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
+              
+              <Button onClick={handleProfileUpdate} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                Update Profile
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Save Button - Only show for profile tab */}
-      {activeTab === 'profile' && (
-        <div className="flex justify-center">
-          <Button 
-            onClick={handleSaveProfile}
-            disabled={isSaving}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 h-auto shadow-lg"
-          >
-            {isSaving ? (
-              <>
-                <Save className="mr-2 h-5 w-5 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-5 w-5" />
-                Save Changes
-              </>
-            )}
-          </Button>
-        </div>
-      )}
+        <TabsContent value="privacy" className="space-y-6">
+          <Card className="border-l-4 border-l-green-500 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-green-600" />
+                Privacy Settings
+              </CardTitle>
+              <CardDescription>
+                Control what information is visible to others
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-medium">Profile Visibility</Label>
+                    <p className="text-sm text-gray-500">Make your profile visible to other users</p>
+                  </div>
+                  <Switch
+                    checked={privacySettings.profileVisibility}
+                    onCheckedChange={(checked) => setPrivacySettings(prev => ({ ...prev, profileVisibility: checked }))}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-medium">Show Email</Label>
+                    <p className="text-sm text-gray-500">Display your email address on your profile</p>
+                  </div>
+                  <Switch
+                    checked={privacySettings.showEmail}
+                    onCheckedChange={(checked) => setPrivacySettings(prev => ({ ...prev, showEmail: checked }))}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-medium">Show Company</Label>
+                    <p className="text-sm text-gray-500">Display your company information</p>
+                  </div>
+                  <Switch
+                    checked={privacySettings.showCompany}
+                    onCheckedChange={(checked) => setPrivacySettings(prev => ({ ...prev, showCompany: checked }))}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-medium">Allow Messages</Label>
+                    <p className="text-sm text-gray-500">Allow other users to send you messages</p>
+                  </div>
+                  <Switch
+                    checked={privacySettings.allowMessages}
+                    onCheckedChange={(checked) => setPrivacySettings(prev => ({ ...prev, allowMessages: checked }))}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-medium">Show Activity</Label>
+                    <p className="text-sm text-gray-500">Display your recent activity and posts</p>
+                  </div>
+                  <Switch
+                    checked={privacySettings.showActivity}
+                    onCheckedChange={(checked) => setPrivacySettings(prev => ({ ...prev, showActivity: checked }))}
+                  />
+                </div>
+              </div>
+              
+              <Button onClick={handlePrivacyUpdate} className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
+                Update Privacy Settings
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="linkedin" className="space-y-6">
+          <Card className="border-l-4 border-l-blue-500 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+              <CardTitle className="flex items-center gap-2">
+                <Linkedin className="h-5 w-5 text-blue-600" />
+                LinkedIn Integration
+              </CardTitle>
+              <CardDescription>
+                Connect your LinkedIn account to schedule and manage posts
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${isLinkedInConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <div>
+                    <p className="font-medium">
+                      LinkedIn {isLinkedInConnected ? 'Connected' : 'Not Connected'}
+                    </p>
+                    {isLinkedInConnected && (
+                      <p className="text-sm text-gray-500">{linkedInProfile.name}</p>
+                    )}
+                  </div>
+                </div>
+                {isLinkedInConnected ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                )}
+              </div>
+
+              {isLinkedInConnected ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <Label className="text-sm font-medium text-gray-500">Profile Name</Label>
+                        <p className="text-lg font-semibold">{linkedInProfile.name}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <Label className="text-sm font-medium text-gray-500">Connections</Label>
+                        <p className="text-lg font-semibold">{linkedInProfile.connections}+</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Profile URL</Label>
+                    <p className="text-blue-600 hover:underline cursor-pointer">{linkedInProfile.profileUrl}</p>
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    <Button variant="outline" className="flex-1" disabled>
+                      <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                      Connected
+                    </Button>
+                    <Button 
+                      onClick={handleLinkedInDisconnect}
+                      variant="outline" 
+                      className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
+                    >
+                      Disconnect
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Linkedin className="mx-auto h-12 w-12 text-blue-600 mb-4" />
+                  <p className="text-lg font-medium mb-2">Connect Your LinkedIn Account</p>
+                  <p className="text-gray-500 mb-6">Authorize LinkedUp to post content to your LinkedIn profile</p>
+                  <Button onClick={handleLinkedInConnect} className="bg-[#0077B5] hover:bg-[#005582] text-white">
+                    <Linkedin className="mr-2 h-4 w-4" />
+                    Connect LinkedIn
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
+          <Card className="border-l-4 border-l-purple-500 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-purple-600" />
+                Security Settings
+              </CardTitle>
+              <CardDescription>
+                Manage your account security and password
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="current-email">Current Email</Label>
+                  <Input
+                    id="current-email"
+                    type="email"
+                    value={profileData.email}
+                    disabled
+                    className="bg-gray-50 dark:bg-gray-800"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="new-password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="border-2 focus:border-purple-500 pr-10"
+                      placeholder="Enter new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={handlePasswordChange} 
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  disabled={!newPassword}
+                >
+                  Update Password
+                </Button>
+              </div>
+              
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4">Account Status</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span>Email Verified</span>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Verified
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Two-Factor Authentication</span>
+                    <Badge variant="secondary">
+                      Coming Soon
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

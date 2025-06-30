@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Lightbulb } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -21,12 +22,31 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState('create-content');
   const [showSuggestionBox, setShowSuggestionBox] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Check if email is confirmed
+          if (!session.user.email_confirmed_at) {
+            toast({
+              title: "Email Verification Required",
+              description: "Please check your email and verify your account before continuing.",
+              variant: "destructive",
+            });
+            // Don't set as logged in if email not confirmed
+            setSession(null);
+            setUser(null);
+            setIsLoggedIn(false);
+            setIsLoading(false);
+            return;
+          }
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoggedIn(!!session);
@@ -36,14 +56,21 @@ const Index = () => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoggedIn(!!session);
+      if (session?.user && !session.user.email_confirmed_at) {
+        // Email not confirmed
+        setSession(null);
+        setUser(null);
+        setIsLoggedIn(false);
+      } else {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoggedIn(!!session);
+      }
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleLogin = (userData: { email: string; name: string }) => {
     // This is handled by the auth state change listener
@@ -92,10 +119,10 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-lg font-medium text-gray-600">Loading LinkedUp...</p>
         </div>
       </div>
     );
@@ -112,7 +139,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
       <DashboardLayout
         user={userData}
         onLogout={handleLogout}

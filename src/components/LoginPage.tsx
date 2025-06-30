@@ -89,14 +89,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">LinkedUp</h1>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-4 shadow-xl">
+            <span className="text-2xl font-bold text-white">L</span>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">LinkedUp</h1>
           <p className="text-gray-600 dark:text-gray-300">for brilliant LinkedIn posts</p>
         </div>
 
-        <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        <Card className="shadow-2xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">
               {isLogin ? 'Welcome back' : 'Create account'}
@@ -121,6 +124,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       value={formData.name}
                       onChange={handleInputChange}
                       required={!isLogin}
+                      className="border-2 focus:border-blue-500"
                     />
                   </div>
                   <div className="space-y-2">
@@ -131,6 +135,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       placeholder="Your Company"
                       value={formData.company}
                       onChange={handleInputChange}
+                      className="border-2 focus:border-blue-500"
                     />
                   </div>
                   <div className="space-y-2">
@@ -141,6 +146,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       placeholder="Your Position"
                       value={formData.position}
                       onChange={handleInputChange}
+                      className="border-2 focus:border-blue-500"
                     />
                   </div>
                   <div className="space-y-2">
@@ -151,6 +157,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       placeholder="Technology, Marketing, etc."
                       value={formData.industry}
                       onChange={handleInputChange}
+                      className="border-2 focus:border-blue-500"
                     />
                   </div>
                 </>
@@ -166,6 +173,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
+                  className="border-2 focus:border-blue-500"
                 />
               </div>
               
@@ -179,12 +187,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   value={formData.password}
                   onChange={handleInputChange}
                   required
+                  className="border-2 focus:border-blue-500"
                 />
               </div>
               
               <Button 
                 type="submit" 
-                className="w-full bg-primary hover:bg-primary/90"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 h-auto shadow-lg"
                 disabled={isLoading}
               >
                 {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Create Account')}
@@ -195,7 +204,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-primary hover:underline text-sm"
+                className="text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium"
               >
                 {isLogin 
                   ? "Don't have an account? Sign up" 
