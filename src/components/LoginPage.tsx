@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LoginPageProps {
   onLogin: (userData: { email: string; name: string }) => void;
@@ -20,41 +21,63 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     position: '',
     industry: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    if (isLogin) {
-      // Simple login validation
-      if (formData.email && formData.password) {
-        onLogin({ email: formData.email, name: formData.name || 'User' });
-        toast({
-          title: "Welcome back!",
-          description: "You've successfully logged in to LinkedUp.",
+    try {
+      if (isLogin) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
         });
+
+        if (error) throw error;
+
+        if (data.user) {
+          onLogin({ 
+            email: data.user.email || formData.email, 
+            name: data.user.user_metadata?.name || formData.name || 'User' 
+          });
+          toast({
+            title: "Welcome back!",
+            description: "You've successfully logged in to LinkedUp.",
+          });
+        }
       } else {
+        const { error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              name: formData.name,
+              company: formData.company,
+              position: formData.position,
+              industry: formData.industry
+            }
+          }
+        });
+
+        if (error) throw error;
+
         toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
-          variant: "destructive",
+          title: "Check your email!",
+          description: "We've sent you a confirmation link. Please verify your email before signing in.",
         });
       }
-    } else {
-      // Registration validation
-      if (formData.email && formData.password && formData.name) {
-        onLogin({ email: formData.email, name: formData.name });
-        toast({
-          title: "Account created!",
-          description: "Welcome to LinkedUp! Your account has been created successfully.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
-          variant: "destructive",
-        });
-      }
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred during authentication.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -159,8 +182,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 />
               </div>
               
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-                {isLogin ? 'Sign In' : 'Create Account'}
+              <Button 
+                type="submit" 
+                className="w-full bg-primary hover:bg-primary/90"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Create Account')}
               </Button>
             </form>
             

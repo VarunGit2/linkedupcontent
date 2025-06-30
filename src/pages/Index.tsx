@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoginPage from '@/components/LoginPage';
 import DashboardLayout from '@/components/DashboardLayout';
 import CreateContent from '@/components/CreateContent';
@@ -11,22 +11,68 @@ import SuggestionBox from '@/components/SuggestionBox';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Lightbulb } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
 
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<{ email: string; name: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [currentPage, setCurrentPage] = useState('create-content');
   const [showSuggestionBox, setShowSuggestionBox] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoggedIn(!!session);
+        setIsLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoggedIn(!!session);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleLogin = (userData: { email: string; name: string }) => {
-    setUser(userData);
-    setIsLoggedIn(true);
+    // This is handled by the auth state change listener
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUser(null);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentPage('create-content');
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'User';
+  };
+
+  const getUserInitials = () => {
+    const name = getUserDisplayName();
+    if (name === 'User') return 'U';
+    
+    const nameParts = name.split(' ');
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    }
+    return name[0].toUpperCase();
   };
 
   const renderCurrentPage = () => {
@@ -38,20 +84,37 @@ const Index = () => {
       case 'schedule-posts':
         return <SchedulePosts />;
       case 'profile-settings':
-        return <ProfileSettings user={user!} />;
+        return <ProfileSettings user={user} />;
       default:
         return <CreateContent />;
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
+  const userData = {
+    email: user?.email || '',
+    name: getUserDisplayName(),
+    initials: getUserInitials()
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       <DashboardLayout
-        user={user!}
+        user={userData}
         onLogout={handleLogout}
         currentPage={currentPage}
         onNavigate={setCurrentPage}

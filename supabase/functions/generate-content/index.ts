@@ -15,6 +15,12 @@ serve(async (req) => {
   }
 
   try {
+    console.log('OpenAI API Key available:', openAIApiKey ? 'Yes' : 'No');
+    
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API Key not found in environment variables');
+    }
+
     const { prompt, tone, length, type } = await req.json();
 
     console.log('Generating content with:', { prompt, tone, length, type });
@@ -47,8 +53,12 @@ serve(async (req) => {
       }),
     });
 
+    console.log('OpenAI API Response Status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('OpenAI API Error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
