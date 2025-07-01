@@ -26,20 +26,17 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // Check if email is confirmed
           if (!session.user.email_confirmed_at) {
             toast({
               title: "Email Verification Required",
               description: "Please check your email and verify your account before continuing.",
               variant: "destructive",
             });
-            // Don't set as logged in if email not confirmed
             setSession(null);
             setUser(null);
             setIsLoggedIn(false);
@@ -55,10 +52,8 @@ const Index = () => {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user && !session.user.email_confirmed_at) {
-        // Email not confirmed
         setSession(null);
         setUser(null);
         setIsLoggedIn(false);
@@ -104,6 +99,7 @@ const Index = () => {
   };
 
   const renderCurrentPage = () => {
+    console.log('Current page:', currentPage);
     switch (currentPage) {
       case 'create-content':
         return <CreateContent />;
@@ -115,14 +111,21 @@ const Index = () => {
         return (
           <ProfileView 
             user={user} 
-            onEditProfile={() => setCurrentPage('settings')} 
+            onEditProfile={() => setCurrentPage('profile-settings')} 
+          />
+        );
+      case 'profile-settings':
+        return (
+          <ProfileSettings 
+            user={user} 
+            onBack={() => setCurrentPage('profile')}
           />
         );
       case 'settings':
         return (
           <ProfileSettings 
             user={user} 
-            onBack={() => setCurrentPage('profile')}
+            onBack={() => setCurrentPage('create-content')}
           />
         );
       default:
@@ -162,7 +165,6 @@ const Index = () => {
         <div className="px-4 sm:px-6 lg:px-8">
           {renderCurrentPage()}
           
-          {/* Suggestion Button */}
           <Button
             onClick={() => setShowSuggestionBox(true)}
             className="fixed bottom-6 left-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-xl z-40 rounded-full p-3 border-2 border-white dark:border-gray-800"

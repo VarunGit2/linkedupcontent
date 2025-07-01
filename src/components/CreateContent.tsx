@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Copy, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Loader2, Sparkles, Copy, Calendar, AlertTriangle, RefreshCw, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const CreateContent: React.FC = () => {
@@ -31,7 +31,9 @@ const CreateContent: React.FC = () => {
     setError('');
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-content', {
+      console.log('Starting content generation...');
+      
+      const { data, error: functionError } = await supabase.functions.invoke('generate-content', {
         body: {
           prompt: `Create a LinkedIn post about: ${prompt}`,
           tone,
@@ -40,9 +42,11 @@ const CreateContent: React.FC = () => {
         }
       });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
+      console.log('Function response:', { data, error: functionError });
+
+      if (functionError) {
+        console.error('Supabase function error:', functionError);
+        throw new Error(functionError.message || 'Function call failed');
       }
 
       if (data?.error) {
@@ -62,20 +66,20 @@ const CreateContent: React.FC = () => {
           description: "Your LinkedIn post has been created.",
         });
 
-        // Track usage
         const currentCount = parseInt(localStorage.getItem('content-generated') || '0');
         localStorage.setItem('content-generated', (currentCount + 1).toString());
       } else {
-        throw new Error('No content generated');
+        throw new Error('No content received from AI service');
       }
 
     } catch (error) {
       console.error('Error generating content:', error);
-      setError(error.message || 'Failed to generate content');
+      const errorMessage = error.message || 'Failed to generate content';
+      setError(errorMessage);
       
       toast({
         title: "Generation Failed",
-        description: "Please check your API configuration and try again.",
+        description: "AI service is temporarily unavailable. Please check your API configuration or try again later.",
         variant: "destructive",
       });
     } finally {
@@ -170,6 +174,10 @@ const CreateContent: React.FC = () => {
                   <span className="text-sm font-medium">Generation Error</span>
                 </div>
                 <p className="text-sm text-red-600 dark:text-red-300 mt-1">{error}</p>
+                <div className="flex items-center gap-2 mt-2 text-xs text-red-600">
+                  <Settings className="h-3 w-3" />
+                  <span>API configuration may need to be updated in Settings</span>
+                </div>
               </div>
             )}
 
