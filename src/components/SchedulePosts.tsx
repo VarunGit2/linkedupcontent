@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Clock, Eye, Share, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 const SchedulePosts: React.FC = () => {
   const [postContent, setPostContent] = useState('');
