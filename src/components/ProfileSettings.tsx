@@ -4,153 +4,156 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, User, Shield, Linkedin, CheckCircle, AlertCircle, Settings } from 'lucide-react';
+import { User, ArrowLeft, Link, Unlink, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface ProfileSettingsProps {
-  user: SupabaseUser | null;
-  onBack?: () => void;
+  user: any;
+  onBack: () => void;
 }
 
 const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, onBack }) => {
-  const [name, setName] = useState('');
-  const [bio, setBio] = useState('');
-  const [company, setCompany] = useState('');
-  const [position, setPosition] = useState('');
-  const [website, setWebsite] = useState('');
-  const [isPublicProfile, setIsPublicProfile] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [marketingEmails, setMarketingEmails] = useState(false);
+  const [name, setName] = useState(user?.user_metadata?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
   const [linkedInProfile, setLinkedInProfile] = useState({ name: '', profileUrl: '' });
-  const [isSaving, setIsSaving] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load user profile data
-    if (user) {
-      setName(user.user_metadata?.name || '');
-      // Load other profile data from localStorage or API
-      const savedProfile = localStorage.getItem('user-profile');
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile);
-        setBio(profile.bio || '');
-        setCompany(profile.company || '');
-        setPosition(profile.position || '');
-        setWebsite(profile.website || '');
-        setIsPublicProfile(profile.isPublicProfile !== false);
-        setEmailNotifications(profile.emailNotifications !== false);
-        setMarketingEmails(profile.marketingEmails === true);
-      }
-    }
-
-    // Check LinkedIn connection
     const isConnected = localStorage.getItem('linkedin-connected') === 'true';
     setIsLinkedInConnected(isConnected);
     
     if (isConnected) {
-      const savedLinkedInProfile = localStorage.getItem('linkedin-profile');
-      if (savedLinkedInProfile) {
-        setLinkedInProfile(JSON.parse(savedLinkedInProfile));
+      const savedProfile = localStorage.getItem('linkedin-profile');
+      if (savedProfile) {
+        setLinkedInProfile(JSON.parse(savedProfile));
       }
     }
-  }, [user]);
+  }, []);
 
-  const handleSaveProfile = async () => {
-    setIsSaving(true);
+  const connectLinkedIn = async () => {
+    setIsConnecting(true);
     
     try {
-      // Update Supabase auth metadata
-      const { error: authError } = await supabase.auth.updateUser({
-        data: { name }
-      });
-
-      if (authError) throw authError;
-
-      // Save profile data to localStorage (in a real app, this would be saved to database)
-      const profileData = {
-        bio,
-        company,
-        position,
-        website,
-        isPublicProfile,
-        emailNotifications,
-        marketingEmails,
-        updatedAt: new Date().toISOString()
-      };
-
-      localStorage.setItem('user-profile', JSON.stringify(profileData));
-
-      toast({
-        title: "Profile Updated Successfully! ✅",
-        description: "Your profile settings have been saved.",
-      });
-
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: "Error Updating Profile",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleConnectLinkedIn = async () => {
-    try {
-      // In a real app, this would initiate OAuth flow
-      const response = await supabase.functions.invoke('linkedin-auth', {
+      const redirectUri = `${window.location.origin}/linkedin-callback`;
+      
+      const { data, error } = await supabase.functions.invoke('linkedin-auth', {
         body: {
           action: 'getAuthUrl',
-          redirectUri: window.location.origin + '/auth/linkedin/callback'
+          redirectUri: redirectUri
         }
       });
 
-      if (response.data?.authUrl) {
-        // Store state for verification
-        localStorage.setItem('linkedin-oauth-state', response.data.state);
-        // Redirect to LinkedIn OAuth
-        window.location.href = response.data.authUrl;
-      } else {
-        // Fallback for demo purposes
-        setIsLinkedInConnected(true);
-        const demoProfile = {
-          name: user?.user_metadata?.name || 'Demo User',
-          profileUrl: 'https://linkedin.com/in/demo-user'
-        };
-        setLinkedInProfile(demoProfile);
-        localStorage.setItem('linkedin-connected', 'true');
-        localStorage.setItem('linkedin-profile', JSON.stringify(demoProfile));
+      if (error) throw error;
+
+      if (data?.authUrl) {
+        // Store the state for verification
+        localStorage.setItem('linkedin-auth-state', data.state);
         
-        toast({
-          title: "LinkedIn Connected! 🎉",
-          description: "You can now post and schedule content to LinkedIn.",
-        });
+        // Open LinkedIn OAuth in a popup
+        const popup = window.open(
+          data.authUrl,
+          'linkedin-auth',
+          'width=600,height=600,scrollbars=yes,resizable=yes'
+        );
+
+        // Listen for the popup to close or receive a message
+        const checkClosed = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(checkClosed);
+            setIsConnecting(false);
+            
+            // Check if we received the authorization code
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            
+            if (code && state === localStorage.getItem('linkedin-auth-state')) {
+              handleAuthCallback(code, redirectUri);
+            }
+          }
+        }, 1000);
+
+        // Listen for postMessage from popup
+        const messageListener = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data.type === 'LINKEDIN_AUTH_SUCCESS') {
+            popup?.close();
+            clearInterval(checkClosed);
+            handleAuthCallback(event.data.code, redirectUri);
+            window.removeEventListener('message', messageListener);
+          }
+        };
+        
+        window.addEventListener('message', messageListener);
       }
     } catch (error) {
       console.error('LinkedIn connection error:', error);
       toast({
         title: "Connection Failed",
-        description: "Please try connecting to LinkedIn again.",
+        description: "Failed to connect to LinkedIn. Please try again.",
         variant: "destructive",
       });
+      setIsConnecting(false);
     }
   };
 
-  const handleDisconnectLinkedIn = () => {
-    setIsLinkedInConnected(false);
-    setLinkedInProfile({ name: '', profileUrl: '' });
+  const handleAuthCallback = async (code: string, redirectUri: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('linkedin-auth', {
+        body: {
+          action: 'exchangeCode',
+          code: code,
+          redirectUri: redirectUri
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data.accessToken) {
+        // Store LinkedIn credentials
+        localStorage.setItem('linkedin-access-token', data.accessToken);
+        localStorage.setItem('linkedin-connected', 'true');
+        localStorage.setItem('linkedin-user-id', data.profile.sub);
+        
+        const profileData = {
+          name: data.profile.name,
+          profileUrl: `https://linkedin.com/in/${data.profile.sub}`
+        };
+        
+        localStorage.setItem('linkedin-profile', JSON.stringify(profileData));
+        
+        setIsLinkedInConnected(true);
+        setLinkedInProfile(profileData);
+        
+        toast({
+          title: "LinkedIn Connected! 🎉",
+          description: `Successfully connected as ${data.profile.name}`,
+        });
+      }
+    } catch (error) {
+      console.error('Auth callback error:', error);
+      toast({
+        title: "Authentication Failed",
+        description: "Failed to complete LinkedIn authentication.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const disconnectLinkedIn = () => {
+    localStorage.removeItem('linkedin-access-token');
     localStorage.removeItem('linkedin-connected');
     localStorage.removeItem('linkedin-profile');
-    localStorage.removeItem('linkedin-access-token');
     localStorage.removeItem('linkedin-user-id');
+    
+    setIsLinkedInConnected(false);
+    setLinkedInProfile({ name: '', profileUrl: '' });
     
     toast({
       title: "LinkedIn Disconnected",
@@ -161,24 +164,22 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, onBack }) => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
-        {onBack && (
-          <Button variant="outline" onClick={onBack} size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Profile
-          </Button>
-        )}
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Settings
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Manage your profile and preferences
-          </p>
-        </div>
+        <Button
+          onClick={onBack}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Settings
+        </h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Profile Information */}
+        {/* Profile Settings */}
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -186,7 +187,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, onBack }) => {
               Profile Information
             </CardTitle>
             <CardDescription>
-              Update your personal and professional details
+              Update your personal information
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -196,203 +197,97 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, onBack }) => {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
+                placeholder="Enter your full name"
               />
             </div>
-
             <div>
-              <Label htmlFor="position">Position</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="position"
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                placeholder="Your job title"
+                id="email"
+                value={email}
+                disabled
+                className="bg-gray-50"
               />
-            </div>
-
-            <div>
-              <Label htmlFor="company">Company</Label>
-              <Input
-                id="company"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Your company name"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="website">Website</Label>
-              <Input
-                id="website"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                placeholder="https://yourwebsite.com"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself..."
-                className="min-h-[100px]"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Privacy & Security */}
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Privacy & Security
-            </CardTitle>
-            <CardDescription>
-              Control your privacy and notification settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="public-profile">Public Profile</Label>
-                <p className="text-sm text-gray-500">Make your profile visible to others</p>
-              </div>
-              <Switch
-                id="public-profile"
-                checked={isPublicProfile}
-                onCheckedChange={setIsPublicProfile}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="email-notifications">Email Notifications</Label>
-                <p className="text-sm text-gray-500">Receive updates about your content</p>
-              </div>
-              <Switch
-                id="email-notifications"
-                checked={emailNotifications}
-                onCheckedChange={setEmailNotifications}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="marketing-emails">Marketing Emails</Label>
-                <p className="text-sm text-gray-500">Receive tips and product updates</p>
-              </div>
-              <Switch
-                id="marketing-emails"
-                checked={marketingEmails}
-                onCheckedChange={setMarketingEmails}
-              />
+              <p className="text-sm text-gray-500 mt-1">
+                Email cannot be changed from here
+              </p>
             </div>
           </CardContent>
         </Card>
 
         {/* LinkedIn Integration */}
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-l-4 border-l-blue-600">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Linkedin className="h-5 w-5" />
+              <Link className="h-5 w-5" />
               LinkedIn Integration
             </CardTitle>
             <CardDescription>
-              Connect your LinkedIn account to post and schedule content
+              Connect your LinkedIn account to publish posts directly
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {isLinkedInConnected ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-800 dark:text-green-200">
-                      LinkedIn Connected
-                    </p>
-                    <p className="text-sm text-green-600 dark:text-green-300">
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full ${isLinkedInConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                <div>
+                  <span className="font-medium">
+                    {isLinkedInConnected ? 'Connected' : 'Not Connected'}
+                  </span>
+                  {isLinkedInConnected && linkedInProfile.name && (
+                    <p className="text-sm text-gray-600">
                       Connected as {linkedInProfile.name}
                     </p>
-                  </div>
+                  )}
                 </div>
+              </div>
+              {isLinkedInConnected ? (
+                <CheckCircle className="w-5 h-5 text-green-500" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+
+            {isLinkedInConnected ? (
+              <div className="space-y-3">
+                <p className="text-sm text-green-700 bg-green-50 p-3 rounded-md">
+                  ✅ LinkedIn account is connected. You can now publish posts directly to LinkedIn!
+                </p>
                 <Button
+                  onClick={disconnectLinkedIn}
                   variant="outline"
-                  onClick={handleDisconnectLinkedIn}
-                  className="w-full"
+                  className="w-full border-red-300 text-red-600 hover:bg-red-50"
                 >
+                  <Unlink className="mr-2 h-4 w-4" />
                   Disconnect LinkedIn
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-yellow-600" />
-                  <div>
-                    <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                      LinkedIn Not Connected
-                    </p>
-                    <p className="text-sm text-yellow-600 dark:text-yellow-300">
-                      Connect to post and schedule content
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  Connect your LinkedIn account to publish posts directly from the app.
+                </p>
                 <Button
-                  onClick={handleConnectLinkedIn}
+                  onClick={connectLinkedIn}
+                  disabled={isConnecting}
                   className="w-full bg-[#0077B5] hover:bg-[#005885] text-white"
                 >
-                  <Linkedin className="h-4 w-4 mr-2" />
-                  Connect LinkedIn
+                  {isConnecting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Link className="mr-2 h-4 w-4" />
+                      Connect LinkedIn
+                    </>
+                  )}
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
-
-        {/* Account Settings */}
-        <Card className="border-l-4 border-l-red-500">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Account Settings
-            </CardTitle>
-            <CardDescription>
-              Manage your account and data
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <p className="font-medium">Email Address</p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
-            </div>
-
-            <div className="p-4 border rounded-lg">
-              <p className="font-medium">Account Created</p>
-              <p className="text-sm text-gray-500">
-                {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
-              </p>
-            </div>
-
-            <Button variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50">
-              Delete Account
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSaveProfile}
-          disabled={isSaving}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-8"
-        >
-          {isSaving ? 'Saving...' : 'Save Changes'}
-        </Button>
       </div>
     </div>
   );

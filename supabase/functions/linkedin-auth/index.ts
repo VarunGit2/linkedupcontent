@@ -14,13 +14,21 @@ serve(async (req) => {
 
   try {
     const { action, code, redirectUri } = await req.json();
+    console.log('LinkedIn auth action:', action);
 
     if (action === 'getAuthUrl') {
       const clientId = Deno.env.get('LINKEDIN_CLIENT_ID');
+      
+      if (!clientId) {
+        throw new Error('LinkedIn Client ID not configured');
+      }
+      
       const scope = 'openid profile w_member_social';
       const state = crypto.randomUUID();
       
       const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
+      
+      console.log('Generated auth URL for LinkedIn');
       
       return new Response(JSON.stringify({ authUrl, state }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -30,6 +38,12 @@ serve(async (req) => {
     if (action === 'exchangeCode') {
       const clientId = Deno.env.get('LINKEDIN_CLIENT_ID');
       const clientSecret = Deno.env.get('LINKEDIN_CLIENT_SECRET');
+
+      if (!clientId || !clientSecret) {
+        throw new Error('LinkedIn credentials not configured');
+      }
+
+      console.log('Exchanging code for access token...');
 
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
@@ -46,19 +60,29 @@ serve(async (req) => {
       });
 
       if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        console.error('Token exchange failed:', errorText);
         throw new Error('Failed to exchange code for token');
       }
 
       const tokenData = await tokenResponse.json();
+      console.log('Successfully got access token');
       
-      // Get user profile
+      // Get user profile using the new userinfo endpoint
       const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
         },
       });
 
+      if (!profileResponse.ok) {
+        const errorText = await profileResponse.text();
+        console.error('Profile fetch failed:', errorText);
+        throw new Error('Failed to fetch user profile');
+      }
+
       const profileData = await profileResponse.json();
+      console.log('Successfully fetched user profile');
 
       return new Response(JSON.stringify({
         accessToken: tokenData.access_token,
