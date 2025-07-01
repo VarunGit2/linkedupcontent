@@ -10,35 +10,152 @@ const corsHeaders = {
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
-// Content templates for variety
-const contentTemplates = {
+// Enhanced content templates with more variety and industry-specific approaches
+const contentFrameworks = {
   professional: [
-    "Recently, I've been reflecting on {topic} and its impact on our industry...",
-    "One of the key challenges I've observed in {topic} is...",
-    "After years of experience with {topic}, here's what I've learned...",
-    "The landscape of {topic} is rapidly evolving. Here's my take on...",
-    "I wanted to share some insights about {topic} that might benefit your professional journey..."
+    "Problem-Solution Framework: I recently encountered {topic} and discovered an unexpected solution...",
+    "Trend Analysis: The landscape of {topic} is shifting dramatically. Here's what industry leaders need to know...",
+    "Personal Journey: My experience with {topic} taught me three critical lessons that transformed my approach...",
+    "Data-Driven Insight: After analyzing patterns in {topic}, I found surprising correlations that changed everything...",
+    "Contrarian View: While everyone talks about {topic} one way, I've found a completely different perspective that works better...",
+    "Case Study Approach: A recent project involving {topic} revealed insights that could benefit every professional in our field...",
+    "Future Prediction: Based on current trends in {topic}, here's what I predict will happen in the next 12 months...",
+    "Myth-Busting: Let's debunk the biggest misconception about {topic} that's holding professionals back..."
   ],
   casual: [
-    "So, I was thinking about {topic} the other day, and it hit me...",
-    "Let me tell you something interesting about {topic}...",
-    "You know what's fascinating about {topic}? Well, let me share...",
-    "I've been diving deep into {topic} lately, and wow...",
-    "Here's something cool I discovered about {topic}..."
+    "Story-Driven: Here's something interesting that happened to me with {topic} - and what it taught me...",
+    "Behind-the-Scenes: Let me pull back the curtain on {topic} and show you what really happens...",
+    "Honest Confession: I used to completely misunderstand {topic} until this eye-opening experience...",
+    "Quick Win: Discovered a simple hack related to {topic} that saves me hours every week...",
+    "Lesson Learned: Made a costly mistake with {topic} - here's how you can avoid it...",
+    "Surprising Discovery: Was researching {topic} and stumbled upon something that blew my mind...",
+    "Real Talk: Let's have an honest conversation about {topic} and what nobody wants to admit...",
+    "Game Changer: This one insight about {topic} completely transformed how I approach my work..."
   ],
   inspirational: [
-    "Every great achievement in {topic} started with a single step...",
-    "The journey of mastering {topic} teaches us that...",
-    "What if I told you that {topic} could transform your perspective on...",
-    "The most successful people in {topic} all share one common trait...",
-    "Your relationship with {topic} can be the key to unlocking..."
+    "Transformation Story: How embracing {topic} changed not just my career, but my entire perspective...",
+    "Overcome Challenge: The biggest obstacle I faced with {topic} became my greatest strength - here's how...",
+    "Vision Casting: Imagine a world where {topic} is accessible to everyone - here's how we get there...",
+    "Breaking Barriers: Society tells us {topic} is only for certain people. I'm here to prove that wrong...",
+    "Rise Above: When everyone said {topic} was impossible, one person proved them wrong. That person could be you...",
+    "Purpose-Driven: How finding my 'why' in {topic} led to unprecedented success and fulfillment...",
+    "Legacy Building: What if your approach to {topic} could inspire the next generation of leaders?...",
+    "Mindset Shift: The day I stopped seeing {topic} as a challenge and started seeing it as an opportunity..."
   ]
 };
 
-const getRandomTemplate = (tone: string, topic: string) => {
-  const templates = contentTemplates[tone as keyof typeof contentTemplates] || contentTemplates.professional;
-  const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
-  return randomTemplate.replace('{topic}', topic);
+const industryInsights = {
+  technology: "emerging tech trends, digital transformation, innovation cycles",
+  business: "market dynamics, strategic planning, operational excellence",
+  marketing: "consumer behavior, brand building, digital strategies",
+  leadership: "team development, organizational culture, decision-making",
+  career: "professional growth, skill development, networking strategies",
+  entrepreneurship: "startup challenges, business validation, scaling strategies",
+  finance: "market analysis, investment strategies, economic trends",
+  healthcare: "patient care, medical innovation, healthcare systems"
+};
+
+const getEnhancedPrompt = (prompt: string, tone: string, length: string) => {
+  const frameworks = contentFrameworks[tone as keyof typeof contentFrameworks] || contentFrameworks.professional;
+  const randomFramework = frameworks[Math.floor(Math.random() * frameworks.length)];
+  const enhancedFramework = randomFramework.replace('{topic}', prompt);
+  
+  const lengthGuide = {
+    short: "Write 150-250 words. Be concise but impactful.",
+    medium: "Write 300-500 words. Provide substantial value with detailed insights.",
+    long: "Write 600-900 words. Create comprehensive, in-depth content with multiple perspectives and actionable takeaways."
+  };
+
+  return `You are an expert LinkedIn content creator and thought leader. Create highly engaging, original content following this framework: "${enhancedFramework}"
+
+CONTENT REQUIREMENTS:
+- ${lengthGuide[length as keyof typeof lengthGuide]}
+- Write in a ${tone} tone that feels authentic and conversational
+- Include specific, actionable insights (not generic advice)
+- Add relevant statistics, examples, or personal anecdotes when appropriate
+- Structure with clear paragraphs and smooth flow
+- End with an engaging question or call-to-action
+- Include 3-5 strategic hashtags that are specific to the topic
+- Make it feel personal and genuine, not corporate or sales-y
+- Focus on providing real value that readers can immediately apply
+
+AVOID:
+- Generic motivational quotes
+- Overly formal corporate speak
+- Repetitive content patterns
+- Vague statements without substance
+- Self-promotional content
+
+Topic: ${prompt}
+
+Create content that would genuinely help and engage your professional network.`;
+};
+
+const generateFallbackContent = (prompt: string, tone: string, length: string) => {
+  const insights = [
+    `The evolution of ${prompt} is reshaping how we approach professional challenges. Here's what I've learned from recent industry developments:`,
+    `After extensive research into ${prompt}, I've identified three key factors that separate successful professionals from the rest:`,
+    `The misconceptions about ${prompt} are costing professionals valuable opportunities. Let me share a different perspective:`,
+    `My recent deep-dive into ${prompt} revealed surprising patterns that could transform your approach:`,
+    `The future of ${prompt} isn't what most people expect. Based on current trends, here's what's really coming:`
+  ];
+
+  const actionables = [
+    "Focus on building systems rather than just setting goals",
+    "Prioritize learning from adjacent industries and cross-functional insights",
+    "Develop a contrarian thesis and test it with small experiments",
+    "Create feedback loops that help you iterate and improve continuously",
+    "Build strategic relationships before you need them",
+    "Document your lessons learned to compound knowledge over time",
+    "Stay curious about why conventional wisdom might be wrong",
+    "Invest time in understanding the 'why' behind successful patterns"
+  ];
+
+  const hashtags = [
+    "#ProfessionalGrowth #Leadership #Innovation #Strategy #CareerDevelopment",
+    "#ThoughtLeadership #BusinessStrategy #ProfessionalDevelopment #Innovation #Growth",
+    "#CareerAdvice #Leadership #ProfessionalInsights #SuccessStrategy #WorkSmarter",
+    "#BusinessInnovation #ProfessionalSkills #LeadershipDevelopment #StrategyExecution #GrowthMindset",
+    "#IndustryInsights #ProfessionalExcellence #CareerStrategy #BusinessDevelopment #Leadership"
+  ];
+
+  const randomInsight = insights[Math.floor(Math.random() * insights.length)];
+  const randomActionables = actionables.sort(() => 0.5 - Math.random()).slice(0, 4);
+  const randomHashtags = hashtags[Math.floor(Math.random() * hashtags.length)];
+
+  const baseContent = `${randomInsight}
+
+${randomActionables.map((item, index) => `${index + 1}. ${item}`).join('\n')}
+
+The professionals who thrive in today's environment aren't just adapting to change—they're anticipating it and positioning themselves accordingly.
+
+What's your experience with ${prompt}? I'd love to hear your insights in the comments.
+
+${randomHashtags}`;
+
+  // Adjust length based on requirement
+  if (length === 'long') {
+    return baseContent + `
+
+🔍 Key Takeaway: The most successful professionals I know don't just consume information—they synthesize it, experiment with it, and share their learnings with others.
+
+This creates a virtuous cycle of continuous improvement that compounds over time. Every challenge becomes a learning opportunity, every setback becomes valuable data.
+
+The question isn't whether change will happen in your industry—it's whether you'll be ready when it does.`;
+  } else if (length === 'short') {
+    return `${randomInsight}
+
+Quick insights:
+• ${randomActionables[0]}
+• ${randomActionables[1]}
+• ${randomActionables[2]}
+
+What's your take on ${prompt}? Share your thoughts below!
+
+${randomHashtags}`;
+  }
+
+  return baseContent;
 };
 
 serve(async (req) => {
@@ -49,7 +166,7 @@ serve(async (req) => {
   try {
     const { prompt, tone = 'professional', length = 'medium', type = 'content' } = await req.json();
     
-    console.log('Generating content with:', { prompt, tone, length, type });
+    console.log('Enhanced content generation request:', { prompt, tone, length, type });
     console.log('Available APIs:', { 
       anthropic: !!ANTHROPIC_API_KEY, 
       openai: !!OPENAI_API_KEY 
@@ -57,36 +174,14 @@ serve(async (req) => {
 
     let generatedContent = '';
 
-    // Try Anthropic Claude first (newer models available)
+    // Try Anthropic Claude first with enhanced prompts
     if (ANTHROPIC_API_KEY) {
       try {
-        console.log('Trying Anthropic Claude...');
+        console.log('Attempting enhanced generation with Claude...');
         
-        let systemPrompt = '';
-        let maxTokens = 300;
+        const enhancedPrompt = getEnhancedPrompt(prompt, tone, length);
+        const maxTokens = length === 'short' ? 400 : length === 'medium' ? 800 : 1200;
         
-        if (type === 'ideas') {
-          systemPrompt = 'You are a creative LinkedIn content strategist. Generate 8 unique, engaging LinkedIn post ideas. Each idea should be different in approach and perspective. Return only the ideas, one per line, without numbering. Make them actionable and specific.';
-          maxTokens = 600;
-        } else {
-          const lengthMap = { short: 200, medium: 400, long: 700 };
-          maxTokens = lengthMap[length as keyof typeof lengthMap] || 400;
-          
-          systemPrompt = `You are a professional LinkedIn content creator. Create an engaging LinkedIn post that is ${tone} in tone and ${length} in length. 
-
-          Requirements:
-          - Start with a compelling hook or question
-          - Include personal insights or experiences
-          - Add 3-5 relevant hashtags at the end
-          - Make it conversational and engaging
-          - Include actionable advice or takeaways
-          - Use emojis sparingly but effectively
-          - Make the content feel authentic and personal
-          - Avoid generic corporate speak
-          
-          The content should be substantial and valuable to readers.`;
-        }
-
         const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -97,55 +192,33 @@ serve(async (req) => {
           body: JSON.stringify({
             model: 'claude-3-5-sonnet-20241022',
             max_tokens: maxTokens,
-            system: systemPrompt,
             messages: [
-              { role: 'user', content: `${getRandomTemplate(tone, prompt)}\n\nTopic: ${prompt}` }
+              { role: 'user', content: enhancedPrompt }
             ],
-            temperature: 0.8 // Higher temperature for more creativity
+            temperature: 0.9 // Higher creativity
           })
         });
 
         if (claudeResponse.ok) {
           const claudeData = await claudeResponse.json();
           generatedContent = claudeData.content[0]?.text || '';
-          console.log('Successfully generated with Claude');
+          console.log('Successfully generated enhanced content with Claude');
         } else {
-          console.log('Claude failed, status:', claudeResponse.status);
           const errorData = await claudeResponse.text();
-          console.log('Claude error:', errorData);
+          console.log('Claude failed:', claudeResponse.status, errorData);
         }
       } catch (error) {
         console.log('Claude error:', error.message);
       }
     }
 
-    // Try OpenAI if Claude failed or not available
+    // Try OpenAI with enhanced prompts if Claude failed
     if (!generatedContent && OPENAI_API_KEY) {
       try {
-        console.log('Trying OpenAI...');
+        console.log('Attempting enhanced generation with OpenAI...');
         
-        let systemPrompt = '';
-        let maxTokens = 400;
-
-        if (type === 'ideas') {
-          systemPrompt = 'You are a creative content strategist specializing in LinkedIn content. Generate 8 unique, engaging, and professional LinkedIn post ideas. Each should offer a different perspective or approach. Return only the ideas, one per line, without numbering. Make them specific and actionable.';
-          maxTokens = 600;
-        } else {
-          const lengthMap = { short: 250, medium: 500, long: 800 };
-          maxTokens = lengthMap[length as keyof typeof lengthMap] || 500;
-          
-          systemPrompt = `You are a professional LinkedIn content creator. Create engaging LinkedIn posts that are ${tone} in tone and ${length} in length. 
-
-          Requirements:
-          - Start with an attention-grabbing opening
-          - Include personal anecdotes or professional insights
-          - Provide valuable takeaways for readers
-          - Use a conversational, authentic voice
-          - Include 3-5 relevant hashtags
-          - Make it feel personal and genuine
-          - Avoid clichés and generic corporate language
-          - Include actionable advice or questions for engagement`;
-        }
+        const enhancedPrompt = getEnhancedPrompt(prompt, tone, length);
+        const maxTokens = length === 'short' ? 500 : length === 'medium' ? 900 : 1300;
 
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -156,94 +229,32 @@ serve(async (req) => {
           body: JSON.stringify({
             model: 'gpt-4o',
             messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: `${getRandomTemplate(tone, prompt)}\n\nCreate content about: ${prompt}` }
+              { role: 'user', content: enhancedPrompt }
             ],
             max_tokens: maxTokens,
-            temperature: 0.8, // Higher creativity
-            presence_penalty: 0.6, // Encourage new topics
-            frequency_penalty: 0.5, // Reduce repetition
+            temperature: 0.8,
+            presence_penalty: 0.7,
+            frequency_penalty: 0.6,
           }),
         });
 
         if (openaiResponse.ok) {
           const openaiData = await openaiResponse.json();
           generatedContent = openaiData.choices[0]?.message?.content || '';
-          console.log('Successfully generated with OpenAI');
+          console.log('Successfully generated enhanced content with OpenAI');
         } else {
-          console.log('OpenAI failed, status:', openaiResponse.status);
           const errorData = await openaiResponse.text();
-          console.log('OpenAI error:', errorData);
+          console.log('OpenAI failed:', openaiResponse.status, errorData);
         }
       } catch (error) {
         console.log('OpenAI error:', error.message);
       }
     }
 
-    // Enhanced fallback content with variety
+    // Enhanced fallback content if all AI services fail
     if (!generatedContent) {
-      console.log('All AI services failed, using enhanced fallback');
-      
-      const fallbackTemplates = {
-        professional: [
-          "Leadership isn't about having all the answers—it's about asking the right questions and empowering your team to find solutions together.",
-          "The best career advice I ever received: 'Your network is your net worth, but more importantly, your genuine relationships are your real wealth.'",
-          "After 5+ years in the industry, I've learned that the most successful professionals share one trait: they never stop learning and adapting.",
-          "Innovation doesn't happen in isolation. It's born from diverse perspectives, challenging conversations, and the courage to think differently."
-        ],
-        casual: [
-          "Just had my morning coffee and realized something: the best ideas often come when we're not actively trying to be brilliant. ☕",
-          "You know that feeling when everything clicks? That's exactly what happened during yesterday's team meeting...",
-          "Plot twist: The 'failure' I experienced last month actually became the foundation for our biggest breakthrough this quarter.",
-          "Real talk: Sometimes the most productive thing you can do is take a step back and reassess your approach."
-        ],
-        inspirational: [
-          "Every expert was once a beginner. Every leader was once a follower. Every success story started with someone willing to take the first step.",
-          "Your biggest breakthrough is often hiding behind your biggest fear. What would you attempt if you knew you couldn't fail?",
-          "The difference between ordinary and extraordinary isn't talent—it's consistency, persistence, and the willingness to grow through discomfort.",
-          "Success isn't just about reaching your destination; it's about who you become on the journey there."
-        ]
-      };
-      
-      const templates = fallbackTemplates[tone as keyof typeof fallbackTemplates] || fallbackTemplates.professional;
-      const baseContent = templates[Math.floor(Math.random() * templates.length)];
-      
-      if (type === 'ideas') {
-        generatedContent = `Here are 8 unique LinkedIn post ideas tailored for your industry:
-
-💡 Share a behind-the-scenes look at your problem-solving process
-🚀 Discuss a recent industry trend and your unique perspective on it
-🤝 Highlight a mentor who shaped your career and the lesson they taught you
-📊 Share data or insights from a recent project (with permission)
-⚡ Post about a skill you're currently learning and why it matters
-🌟 Celebrate a team member's achievement and what it taught you about leadership
-📚 Review a book, podcast, or course that changed your professional outlook
-🎯 Share your biggest professional challenge this year and how you're tackling it`;
-      } else {
-        const hashtags = [
-          '#ProfessionalGrowth #Leadership #CareerDevelopment',
-          '#Innovation #TeamWork #Success',
-          '#LearningAndDevelopment #Networking #Growth',
-          '#Productivity #Mindset #Excellence',
-          '#BusinessStrategy #Collaboration #Results'
-        ];
-        
-        const randomHashtags = hashtags[Math.floor(Math.random() * hashtags.length)];
-        
-        generatedContent = `${baseContent}
-
-Here's what I've learned from this experience:
-
-✅ Embrace challenges as opportunities for growth
-✅ Build genuine relationships, not just professional connections  
-✅ Stay curious and never stop asking questions
-✅ Share your knowledge to help others succeed
-✅ Focus on progress, not perfection
-
-What's been your biggest professional insight lately? I'd love to hear your thoughts in the comments!
-
-${randomHashtags}`;
-      }
+      console.log('All AI services failed, using enhanced fallback content');
+      generatedContent = generateFallbackContent(prompt, tone, length);
     }
 
     return new Response(JSON.stringify({ content: generatedContent }), {
@@ -251,7 +262,7 @@ ${randomHashtags}`;
     });
 
   } catch (error) {
-    console.error('Error in generate-content function:', error);
+    console.error('Error in enhanced generate-content function:', error);
     
     return new Response(JSON.stringify({ 
       error: 'Content generation service temporarily unavailable. Please try again.',
