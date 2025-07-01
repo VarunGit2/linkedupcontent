@@ -17,35 +17,36 @@ const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: "👋 Hi! I'm your LinkedUp AI assistant. I can help you with content creation, LinkedIn strategies, and professional networking tips. What would you like to know?",
+      text: "👋 Hi! I'm your LinkedUp AI assistant. I can help you with content creation, LinkedIn strategies, and professional networking tips. Choose a quick question below or ask me anything!",
       isBot: true,
       timestamp: new Date()
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showQuickQuestions, setShowQuickQuestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const predefinedQuestions = [
     {
       icon: <Lightbulb className="w-4 h-4" />,
-      question: "Give me content ideas for my industry",
-      category: "Content Ideas"
+      question: "Give me 5 content ideas for my industry",
+      answer: "🎯 Here are 5 powerful LinkedIn content ideas:\n\n1. **Industry Insights**: Share your take on recent trends or news in your field\n2. **Behind-the-Scenes**: Show your work process, team collaborations, or day-in-the-life content\n3. **Lessons Learned**: Write about challenges you've overcome and what you learned\n4. **Educational Content**: Create how-to posts or tips that help your audience\n5. **Personal Stories**: Share professional milestones, career changes, or growth moments\n\n💡 Pro tip: Mix these formats to keep your content fresh and engaging!"
     },
     {
       icon: <TrendingUp className="w-4 h-4" />,
       question: "How to increase LinkedIn engagement?",
-      category: "Growth Tips"
+      answer: "🚀 Here's how to boost your LinkedIn engagement:\n\n✅ **Post consistently** (3-5 times per week)\n✅ **Use storytelling** - People connect with stories, not just facts\n✅ **Ask questions** in your posts to encourage comments\n✅ **Engage first** - Comment on others' posts before posting your own\n✅ **Use 3-5 relevant hashtags** (not more!)\n✅ **Post when your audience is active** (check your analytics)\n✅ **Add visuals** - Images, carousels, and videos perform better\n✅ **Write compelling hooks** - First 2 lines are crucial\n\nRemember: Authentic engagement beats vanity metrics!"
     },
     {
       icon: <Clock className="w-4 h-4" />,
       question: "Best times to post on LinkedIn",
-      category: "Scheduling"
+      answer: "⏰ Optimal LinkedIn posting times:\n\n🌅 **Weekday Mornings**: 8-10 AM (when people check LinkedIn before work)\n🌆 **Lunch Hours**: 12-2 PM (midday breaks)\n🌃 **Early Evening**: 5-6 PM (end of workday)\n\n📅 **Best Days**: Tuesday, Wednesday, Thursday\n🚫 **Avoid**: Late evenings, weekends (unless B2C)\n\n💡 **Pro Tips**:\n• Test different times for YOUR audience\n• Use LinkedIn Analytics to see when your followers are active\n• Consider your audience's time zones\n• Consistency matters more than perfect timing\n\nWhat industry are you in? I can give more specific advice!"
     },
     {
       icon: <Target className="w-4 h-4" />,
       question: "How to write compelling headlines?",
-      category: "Writing Tips"
+      answer: "✍️ Headline formulas that work:\n\n🎯 **The Problem/Solution**: 'Why [Common Problem] Happens (And How to Fix It)'\n📊 **Number Lists**: '7 Strategies That Increased My [Metric] by 200%'\n❓ **Questions**: 'Are You Making These [Number] LinkedIn Mistakes?'\n🔥 **Power Words**: Use 'Proven', 'Secret', 'Ultimate', 'Breakthrough'\n📈 **Specific Results**: Include exact numbers and outcomes\n\n**Examples**:\n• 'The 5-Minute LinkedIn Strategy That Got Me 50K Followers'\n• 'Why 90% of Professionals Fail at Networking (And How You Can Succeed)'\n• 'I Analyzed 1,000 LinkedIn Posts. Here's What Actually Works.'\n\n💡 Keep it under 150 characters for mobile users!"
     }
   ];
 
@@ -60,58 +61,47 @@ const Chatbot: React.FC = () => {
   const getBotResponse = (userMessage: string): string => {
     const message = userMessage.toLowerCase();
     
-    // Content Ideas
-    if (message.includes('content') && message.includes('idea')) {
-      return "🎯 Here are some engaging LinkedIn content ideas:\n\n• Share industry insights and trends\n• Post about your professional achievements\n• Create educational carousel posts\n• Share behind-the-scenes content\n• Write about lessons learned from failures\n• Highlight team accomplishments\n• Comment on industry news with your perspective\n• Share helpful resources and tools\n\nWould you like me to help you develop any of these ideas further?";
+    // Check for predefined questions
+    const matchedQuestion = predefinedQuestions.find(q => 
+      message.includes(q.question.toLowerCase()) || 
+      (message.includes('content') && message.includes('idea') && q.question.includes('content ideas')) ||
+      (message.includes('engagement') && q.question.includes('engagement')) ||
+      (message.includes('time') && message.includes('post') && q.question.includes('times')) ||
+      (message.includes('headline') && q.question.includes('headlines'))
+    );
+
+    if (matchedQuestion) {
+      return matchedQuestion.answer;
     }
-    
-    // LinkedIn Engagement
-    if (message.includes('engagement') || message.includes('likes') || message.includes('comments')) {
-      return "🚀 Here's how to boost your LinkedIn engagement:\n\n✅ Post consistently (3-5 times per week)\n✅ Use storytelling in your posts\n✅ Ask questions to encourage comments\n✅ Engage with others' content first\n✅ Use relevant hashtags (3-5 per post)\n✅ Share personal experiences and insights\n✅ Post when your audience is most active\n✅ Use visuals (images, carousels, videos)\n\nWhich strategy would you like to explore more?";
+
+    // Content strategy
+    if (message.includes('strategy') || message.includes('plan')) {
+      return "🎯 LinkedIn Content Strategy Framework:\n\n**1. Define Your Goals**\n• Brand awareness\n• Lead generation\n• Thought leadership\n• Network building\n\n**2. Know Your Audience**\n• Industry professionals\n• Potential clients\n• Peers and colleagues\n• Industry influencers\n\n**3. Content Mix (80/20 Rule)**\n• 80% Value-driven content\n• 20% Promotional content\n\n**4. Content Types**\n• Educational posts\n• Industry insights\n• Personal stories\n• Behind-the-scenes\n\nNeed help with any specific part?";
     }
-    
-    // Best posting times
-    if (message.includes('time') && (message.includes('post') || message.includes('publish'))) {
-      return "⏰ Best times to post on LinkedIn:\n\n🌅 **Morning**: 8-10 AM (Tuesday-Thursday)\n🌆 **Evening**: 12-2 PM & 5-6 PM\n📅 **Days**: Tuesday, Wednesday, Thursday perform best\n🚫 **Avoid**: Late evenings and weekends\n\n💡 **Pro Tips**:\n• Test different times for your audience\n• Use LinkedIn Analytics to track performance\n• Consider your audience's time zone\n• Be consistent with your posting schedule\n\nWant me to help you create a posting schedule?";
+
+    // Networking
+    if (message.includes('network') || message.includes('connect')) {
+      return "🤝 Effective LinkedIn Networking:\n\n**Connection Requests**:\n• Always personalize your message\n• Mention mutual connections or interests\n• Be specific about why you want to connect\n\n**Building Relationships**:\n• Engage with their content regularly\n• Share their posts with thoughtful comments\n• Offer help before asking for favors\n• Send follow-up messages after events\n\n**Template**:\n'Hi [Name], I enjoyed your recent post about [topic]. As a fellow [industry/role], I'd love to connect and exchange insights. Best, [Your name]'\n\nWhat's your networking goal?";
     }
-    
-    // Headlines
-    if (message.includes('headline') || message.includes('title')) {
-      return "✍️ Tips for compelling LinkedIn headlines:\n\n🎯 **Formula**: Problem + Solution + Benefit\n📊 Use numbers and statistics\n❓ Ask intriguing questions\n🔥 Include power words (proven, secret, ultimate)\n📈 Mention specific outcomes\n👥 Address your target audience directly\n\n**Examples**:\n• '5 Proven Strategies That Increased My Team's Productivity by 40%'\n• 'Why Your LinkedIn Strategy Isn't Working (And How to Fix It)'\n• 'The Secret to Landing Your Dream Job in 90 Days'\n\nWant me to help you craft a headline for your next post?";
-    }
-    
-    // LinkedIn Strategy
-    if (message.includes('strategy') || message.includes('grow') || message.includes('network')) {
-      return "🎯 Comprehensive LinkedIn growth strategy:\n\n**Content Strategy**:\n• Share valuable insights 3-5x/week\n• Mix of educational, personal, and industry content\n• Use storytelling to connect emotionally\n\n**Networking**:\n• Send personalized connection requests\n• Engage meaningfully with others' posts\n• Join and participate in relevant groups\n\n**Profile Optimization**:\n• Professional headshot\n• Keyword-rich headline and summary\n• Regular activity and updates\n\nWhich area would you like to focus on first?";
-    }
-    
-    // Hashtags
-    if (message.includes('hashtag')) {
-      return "🏷️ LinkedIn hashtag best practices:\n\n**Use 3-5 hashtags per post**\n• Mix of popular and niche hashtags\n• Research hashtag performance\n• Create branded hashtags for campaigns\n\n**Popular Categories**:\n• Industry-specific: #Tech #Marketing #Sales\n• Skill-based: #Leadership #Innovation #Growth\n• General business: #Networking #Career #Success\n\n**Tools to find hashtags**:\n• LinkedIn's hashtag suggestions\n• Check competitors' posts\n• Use LinkedUp's content generator\n\nNeed help finding hashtags for your industry?";
-    }
-    
-    // Writing tips
-    if (message.includes('write') || message.includes('writing')) {
-      return "✍️ LinkedIn writing tips for maximum impact:\n\n**Structure**:\n• Hook in first 2 lines\n• Short paragraphs (2-3 sentences)\n• Use bullet points and emojis\n• Include a call-to-action\n\n**Tone**:\n• Professional but conversational\n• Share personal experiences\n• Be authentic and vulnerable\n• Show expertise without bragging\n\n**Engagement**:\n• Ask questions\n• Share controversial (but professional) opinions\n• Tell stories with clear lessons\n• Tag relevant people (sparingly)\n\nWant me to review a draft of your next post?";
-    }
-    
-    // Default responses for general queries
+
+    // Default responses
     const defaultResponses = [
-      "I can help you with LinkedIn content strategy, engagement tips, and professional networking advice. What specific area interests you?",
-      "That's a great question! For the best results, I recommend focusing on consistent, valuable content that resonates with your target audience. What's your current biggest challenge?",
-      "I'm here to help you succeed on LinkedIn! Whether it's content ideas, posting strategies, or networking tips - just let me know what you need.",
-      "LinkedIn success comes from authentic engagement and valuable content. What aspect of your LinkedIn presence would you like to improve?"
+      "I'd be happy to help you with that! Can you be more specific about what aspect of LinkedIn marketing you'd like to focus on?",
+      "That's a great question! For the most relevant advice, could you tell me more about your industry or current LinkedIn challenges?",
+      "I can definitely help with that. Are you looking for content creation tips, engagement strategies, or networking advice?",
+      "LinkedIn success comes from consistent, valuable content and authentic engagement. What's your biggest challenge right now?"
     ];
     
     return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
   };
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = async (messageText?: string) => {
+    const messageToSend = messageText || inputMessage;
+    if (!messageToSend.trim()) return;
 
     const userMessage: Message = {
       id: messages.length + 1,
-      text: inputMessage,
+      text: messageToSend,
       isBot: false,
       timestamp: new Date()
     };
@@ -119,12 +109,13 @@ const Chatbot: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsTyping(true);
+    setShowQuickQuestions(false);
 
     // Simulate typing delay
     setTimeout(() => {
       const botResponse: Message = {
         id: messages.length + 2,
-        text: getBotResponse(inputMessage),
+        text: getBotResponse(messageToSend),
         isBot: true,
         timestamp: new Date()
       };
@@ -134,9 +125,8 @@ const Chatbot: React.FC = () => {
     }, 1000 + Math.random() * 1000);
   };
 
-  const handlePredefinedQuestion = (question: string) => {
-    setInputMessage(question);
-    handleSendMessage();
+  const handleQuickQuestion = (question: string) => {
+    handleSendMessage(question);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -158,7 +148,7 @@ const Chatbot: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 w-96 h-[500px] shadow-2xl z-40 border-2 bg-white dark:bg-gray-900">
+        <Card className="fixed bottom-24 right-6 w-96 h-[600px] shadow-2xl z-40 border-2 bg-white dark:bg-gray-900">
           <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Bot className="h-5 w-5" />
@@ -174,7 +164,7 @@ const Chatbot: React.FC = () => {
                   key={message.id}
                   className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}
                 >
-                  <div className={`flex items-start space-x-2 max-w-[80%] ${message.isBot ? '' : 'flex-row-reverse space-x-reverse'}`}>
+                  <div className={`flex items-start space-x-2 max-w-[85%] ${message.isBot ? '' : 'flex-row-reverse space-x-reverse'}`}>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
                       message.isBot 
                         ? 'bg-gradient-to-r from-blue-500 to-purple-500' 
@@ -215,22 +205,22 @@ const Chatbot: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Predefined Questions */}
-            {messages.length <= 1 && (
-              <div className="px-4 py-2 border-t">
-                <div className="text-xs font-medium text-gray-500 mb-2">Quick questions:</div>
-                <div className="grid grid-cols-2 gap-2">
+            {/* Quick Questions */}
+            {showQuickQuestions && messages.length <= 1 && (
+              <div className="px-4 py-3 border-t bg-gray-50 dark:bg-gray-800">
+                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-3">Quick questions:</div>
+                <div className="space-y-2">
                   {predefinedQuestions.map((item, index) => (
                     <Button
                       key={index}
                       variant="outline"
                       size="sm"
-                      className="text-xs p-2 h-auto justify-start"
-                      onClick={() => handlePredefinedQuestion(item.question)}
+                      className="w-full text-left justify-start h-auto p-3 text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      onClick={() => handleQuickQuestion(item.question)}
                     >
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         {item.icon}
-                        <span className="truncate">{item.category}</span>
+                        <span>{item.question}</span>
                       </div>
                     </Button>
                   ))}
@@ -250,7 +240,7 @@ const Chatbot: React.FC = () => {
                   disabled={isTyping}
                 />
                 <Button 
-                  onClick={handleSendMessage}
+                  onClick={() => handleSendMessage()}
                   disabled={!inputMessage.trim() || isTyping}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >

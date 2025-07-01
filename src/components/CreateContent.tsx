@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Copy, Calendar } from 'lucide-react';
+import { Loader2, Sparkles, Copy, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const CreateContent: React.FC = () => {
@@ -14,6 +14,7 @@ const CreateContent: React.FC = () => {
   const [length, setLength] = useState('medium');
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState('');
   const { toast } = useToast();
 
   const generateContent = async () => {
@@ -27,6 +28,7 @@ const CreateContent: React.FC = () => {
     }
 
     setIsGenerating(true);
+    setError('');
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-content', {
@@ -43,51 +45,38 @@ const CreateContent: React.FC = () => {
         throw error;
       }
 
-      if (data?.error && data?.fallback) {
-        setGeneratedContent(data.fallback);
+      if (data?.error) {
+        setError(data.error);
         toast({
-          title: "Content Generated (Fallback)",
+          title: "Content Generation Error",
           description: data.error,
-          variant: "default",
+          variant: "destructive",
         });
-      } else if (data?.content) {
+        return;
+      }
+
+      if (data?.content) {
         setGeneratedContent(data.content);
         toast({
-          title: "Content Generated! ✨",
-          description: data.isLocal ? 
-            "Using local content due to API limitations" : 
-            "Your LinkedIn post has been created successfully.",
+          title: "Content Generated Successfully! ✨",
+          description: "Your LinkedIn post has been created.",
         });
+
+        // Track usage
+        const currentCount = parseInt(localStorage.getItem('content-generated') || '0');
+        localStorage.setItem('content-generated', (currentCount + 1).toString());
       } else {
         throw new Error('No content generated');
       }
 
-      // Track usage
-      const currentCount = parseInt(localStorage.getItem('ideas-generated') || '0');
-      localStorage.setItem('ideas-generated', (currentCount + 1).toString());
-
     } catch (error) {
       console.error('Error generating content:', error);
-      
-      // Provide fallback content
-      const fallbackContent = `🌟 Professional insight about ${prompt}
-
-In today's dynamic workplace, understanding ${prompt} is crucial for success. Here are key points to consider:
-
-✅ Stay informed about industry trends
-✅ Build meaningful professional relationships  
-✅ Share knowledge and insights generously
-✅ Embrace continuous learning and growth
-
-What's your experience with ${prompt}? I'd love to hear your thoughts in the comments!
-
-#ProfessionalDevelopment #${prompt.replace(/\s+/g, '')} #LinkedIn #Growth`;
-
-      setGeneratedContent(fallbackContent);
+      setError(error.message || 'Failed to generate content');
       
       toast({
-        title: "Using Fallback Content",
-        description: "API unavailable - generated local content for you to customize.",
+        title: "Generation Failed",
+        description: "Please check your API configuration and try again.",
+        variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
@@ -100,6 +89,11 @@ What's your experience with ${prompt}? I'd love to hear your thoughts in the com
       title: "Copied! 📋",
       description: "Content copied to clipboard.",
     });
+  };
+
+  const clearContent = () => {
+    setGeneratedContent('');
+    setError('');
   };
 
   return (
@@ -169,15 +163,25 @@ What's your experience with ${prompt}? I'd love to hear your thoughts in the com
               </div>
             </div>
 
+            {error && (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Generation Error</span>
+                </div>
+                <p className="text-sm text-red-600 dark:text-red-300 mt-1">{error}</p>
+              </div>
+            )}
+
             <Button 
               onClick={generateContent} 
-              disabled={isGenerating}
+              disabled={isGenerating || !prompt.trim()}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 h-auto shadow-lg"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Generating Magic...
+                  Generating Content...
                 </>
               ) : (
                 <>
@@ -213,6 +217,9 @@ What's your experience with ${prompt}? I'd love to hear your thoughts in the com
                   <Button onClick={copyToClipboard} variant="outline" className="flex-1 border-2 hover:bg-gray-50">
                     <Copy className="mr-2 h-4 w-4" />
                     Copy to Clipboard
+                  </Button>
+                  <Button onClick={clearContent} variant="outline" className="border-2 hover:bg-gray-50">
+                    <RefreshCw className="h-4 w-4" />
                   </Button>
                   <Button className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
                     <Calendar className="mr-2 h-4 w-4" />

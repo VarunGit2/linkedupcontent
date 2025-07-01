@@ -115,11 +115,16 @@ const Index = () => {
         return (
           <ProfileView 
             user={user} 
-            onEditProfile={() => setCurrentPage('profile-settings')} 
+            onEditProfile={() => setCurrentPage('settings')} 
           />
         );
-      case 'profile-settings':
-        return <ProfileSettings user={user} />;
+      case 'settings':
+        return (
+          <ProfileSettings 
+            user={user} 
+            onBack={() => setCurrentPage('profile')}
+          />
+        );
       default:
         return <CreateContent />;
     }
