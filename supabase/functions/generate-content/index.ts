@@ -58,6 +58,17 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenAI API Error:', errorText);
+      
+      // Handle specific error cases
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          error: 'API quota exceeded. Please check your OpenAI billing and usage limits.',
+          fallback: 'Due to API limitations, here\'s a sample LinkedIn post:\n\n🚀 Excited to share my thoughts on professional growth in today\'s dynamic workplace!\n\nKey insights:\n• Continuous learning is essential\n• Building meaningful connections matters\n• Embracing change leads to opportunities\n\nWhat strategies have helped you grow professionally? Share your experiences below! 👇\n\n#ProfessionalGrowth #LinkedIn #CareerDevelopment #Networking'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
@@ -71,8 +82,17 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in generate-content function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    
+    // Provide fallback content for better user experience
+    const fallbackContent = type === 'ideas' ? 
+      'Share a professional milestone or achievement\nDiscuss industry trends and insights\nOffer career advice or tips\nHighlight company culture or team success\nComment on relevant news or developments\nShare learning experiences or courses\nCelebrate professional connections\nDiscuss work-life balance strategies' :
+      '🌟 Professional insight of the day!\n\nIn today\'s rapidly evolving workplace, staying adaptable and curious is key to success. Here are three strategies that have made a difference:\n\n✅ Embrace continuous learning\n✅ Build authentic relationships\n✅ Share knowledge generously\n\nWhat professional insights have shaped your career journey? I\'d love to hear your thoughts!\n\n#ProfessionalDevelopment #Growth #LinkedIn #CareerTips';
+    
+    return new Response(JSON.stringify({ 
+      content: fallbackContent,
+      isLocal: true,
+      message: 'Using local content due to API limitations'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

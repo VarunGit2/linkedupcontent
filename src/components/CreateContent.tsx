@@ -38,19 +38,56 @@ const CreateContent: React.FC = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
-      setGeneratedContent(data.content);
-      toast({
-        title: "Content Generated! ✨",
-        description: "Your LinkedIn post has been created successfully.",
-      });
+      if (data?.error && data?.fallback) {
+        setGeneratedContent(data.fallback);
+        toast({
+          title: "Content Generated (Fallback)",
+          description: data.error,
+          variant: "default",
+        });
+      } else if (data?.content) {
+        setGeneratedContent(data.content);
+        toast({
+          title: "Content Generated! ✨",
+          description: data.isLocal ? 
+            "Using local content due to API limitations" : 
+            "Your LinkedIn post has been created successfully.",
+        });
+      } else {
+        throw new Error('No content generated');
+      }
+
+      // Track usage
+      const currentCount = parseInt(localStorage.getItem('ideas-generated') || '0');
+      localStorage.setItem('ideas-generated', (currentCount + 1).toString());
+
     } catch (error) {
       console.error('Error generating content:', error);
+      
+      // Provide fallback content
+      const fallbackContent = `🌟 Professional insight about ${prompt}
+
+In today's dynamic workplace, understanding ${prompt} is crucial for success. Here are key points to consider:
+
+✅ Stay informed about industry trends
+✅ Build meaningful professional relationships  
+✅ Share knowledge and insights generously
+✅ Embrace continuous learning and growth
+
+What's your experience with ${prompt}? I'd love to hear your thoughts in the comments!
+
+#ProfessionalDevelopment #${prompt.replace(/\s+/g, '')} #LinkedIn #Growth`;
+
+      setGeneratedContent(fallbackContent);
+      
       toast({
-        title: "Error",
-        description: "Failed to generate content. Please try again.",
-        variant: "destructive",
+        title: "Using Fallback Content",
+        description: "API unavailable - generated local content for you to customize.",
       });
     } finally {
       setIsGenerating(false);

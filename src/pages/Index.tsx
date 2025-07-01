@@ -6,6 +6,7 @@ import CreateContent from '@/components/CreateContent';
 import GenerateIdeas from '@/components/GenerateIdeas';
 import SchedulePosts from '@/components/SchedulePosts';
 import ProfileSettings from '@/components/ProfileSettings';
+import ProfileView from '@/components/ProfileView';
 import Chatbot from '@/components/Chatbot';
 import SuggestionBox from '@/components/SuggestionBox';
 import Footer from '@/components/Footer';
@@ -110,6 +111,13 @@ const Index = () => {
         return <GenerateIdeas />;
       case 'schedule-posts':
         return <SchedulePosts />;
+      case 'profile':
+        return (
+          <ProfileView 
+            user={user} 
+            onEditProfile={() => setCurrentPage('profile-settings')} 
+          />
+        );
       case 'profile-settings':
         return <ProfileSettings user={user} />;
       default:
