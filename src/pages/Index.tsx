@@ -68,12 +68,82 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [toast]);
 
+  // Handle LinkedIn OAuth callback
+  useEffect(() => {
+    const handleLinkedInCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      const storedState = localStorage.getItem('linkedin-oauth-state');
+
+      if (code && state && state === storedState) {
+        try {
+          const { data, error } = await supabase.functions.invoke('linkedin-auth', {
+            body: {
+              action: 'exchangeCode',
+              code: code,
+              redirectUri: window.location.origin + '/'
+            }
+          });
+
+          if (error) throw error;
+
+          if (data?.success) {
+            localStorage.setItem('linkedin-connected', 'true');
+            localStorage.setItem('linkedin-access-token', data.accessToken);
+            localStorage.setItem('linkedin-profile', JSON.stringify(data.profile));
+            localStorage.setItem('linkedin-user-id', data.profile.sub);
+            localStorage.removeItem('linkedin-oauth-state');
+
+            // Clean up URL
+            const url = new URL(window.location.href);
+            url.search = '';
+            window.history.replaceState({}, document.title, url.toString());
+
+            toast({
+              title: "LinkedIn Connected Successfully! 🎉",
+              description: `Welcome ${data.profile.name}! You can now schedule and publish posts.`,
+            });
+
+            // Navigate to schedule posts
+            setCurrentPage('schedule-posts');
+          } else {
+            throw new Error(data?.error || 'LinkedIn authentication failed');
+          }
+        } catch (error) {
+          console.error('LinkedIn OAuth error:', error);
+          localStorage.removeItem('linkedin-oauth-state');
+          
+          // Clean up URL
+          const url = new URL(window.location.href);
+          url.search = '';
+          window.history.replaceState({}, document.title, url.toString());
+
+          toast({
+            title: "LinkedIn Connection Failed",
+            description: "Please try connecting again from Profile Settings.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    if (isLoggedIn && !isLoading) {
+      handleLinkedInCallback();
+    }
+  }, [isLoggedIn, isLoading, toast]);
+
   const handleLogin = (userData: { email: string; name: string }) => {
     // This is handled by the auth state change listener
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    // Clear LinkedIn data on logout
+    localStorage.removeItem('linkedin-connected');
+    localStorage.removeItem('linkedin-profile');
+    localStorage.removeItem('linkedin-access-token');
+    localStorage.removeItem('linkedin-user-id');
     setCurrentPage('create-content');
   };
 
@@ -162,15 +232,15 @@ const Index = () => {
         currentPage={currentPage}
         onNavigate={setCurrentPage}
       >
-        <div className="px-4 sm:px-6 lg:px-8">
+        <div className="px-2 sm:px-4 lg:px-6 xl:px-8">
           {renderCurrentPage()}
           
           <Button
             onClick={() => setShowSuggestionBox(true)}
-            className="fixed bottom-6 left-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-xl z-40 rounded-full p-3 border-2 border-white dark:border-gray-800"
+            className="fixed bottom-4 sm:bottom-6 left-4 sm:left-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-xl z-40 rounded-full p-2 sm:p-3 border-2 border-white dark:border-gray-800"
             size="sm"
           >
-            <Lightbulb className="h-5 w-5" />
+            <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </div>
       </DashboardLayout>

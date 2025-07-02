@@ -16,7 +16,7 @@ serve(async (req) => {
     const { action, code, redirectUri } = await req.json();
     console.log('LinkedIn auth request:', { action, hasCode: !!code, redirectUri });
 
-    // LinkedIn OAuth credentials - these should be set in Supabase secrets
+    // LinkedIn OAuth credentials
     const clientId = Deno.env.get('LINKEDIN_CLIENT_ID');
     const clientSecret = Deno.env.get('LINKEDIN_CLIENT_SECRET');
 
@@ -32,17 +32,21 @@ serve(async (req) => {
         });
       }
       
-      // Enhanced OAuth scope for better LinkedIn integration
+      // Use the current origin for redirect URI - this fixes the redirect_uri mismatch
+      const currentOrigin = new URL(req.url).origin.replace('functions', '8031ae9d-9e89-4421-8841-d3617866d78c.lovableproject.com');
+      const finalRedirectUri = `${currentOrigin}/`;
+      
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
       
-      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
+      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
       
-      console.log('Generated LinkedIn auth URL successfully');
+      console.log('Generated LinkedIn auth URL with redirect:', finalRedirectUri);
       
       return new Response(JSON.stringify({ 
         authUrl, 
         state,
+        redirectUri: finalRedirectUri,
         success: true 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -127,8 +131,8 @@ serve(async (req) => {
       const profileData = await profileResponse.json();
       console.log('LinkedIn profile fetched successfully');
 
-      // Step 3: Get additional profile details if needed
-      let enhancedProfile = {
+      // Enhanced profile data
+      const enhancedProfile = {
         ...profileData,
         name: profileData.name || `${profileData.given_name || ''} ${profileData.family_name || ''}`.trim(),
         profileUrl: `https://www.linkedin.com/in/${profileData.sub}`,

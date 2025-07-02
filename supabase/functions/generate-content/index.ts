@@ -7,155 +7,155 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-
-// Enhanced content templates with more variety and industry-specific approaches
-const contentFrameworks = {
+// Enhanced content templates for 2025
+const contentTemplates = {
   professional: [
-    "Problem-Solution Framework: I recently encountered {topic} and discovered an unexpected solution...",
-    "Trend Analysis: The landscape of {topic} is shifting dramatically. Here's what industry leaders need to know...",
-    "Personal Journey: My experience with {topic} taught me three critical lessons that transformed my approach...",
-    "Data-Driven Insight: After analyzing patterns in {topic}, I found surprising correlations that changed everything...",
-    "Contrarian View: While everyone talks about {topic} one way, I've found a completely different perspective that works better...",
-    "Case Study Approach: A recent project involving {topic} revealed insights that could benefit every professional in our field...",
-    "Future Prediction: Based on current trends in {topic}, here's what I predict will happen in the next 12 months...",
-    "Myth-Busting: Let's debunk the biggest misconception about {topic} that's holding professionals back..."
+    "In 2025, the landscape of {industry} is rapidly evolving. Here's what I've learned about {topic}:",
+    "After {experience} years in {field}, I've discovered that {insight}. Let me share why this matters:",
+    "The biggest challenge facing professionals in 2025? {challenge}. Here's how we can address it:",
+    "What nobody talks about in {industry}: {unique_perspective}. It's time we change this narrative.",
+    "I used to believe {old_belief}, but recent developments in 2025 have shown me {new_understanding}:"
   ],
-  casual: [
-    "Story-Driven: Here's something interesting that happened to me with {topic} - and what it taught me...",
-    "Behind-the-Scenes: Let me pull back the curtain on {topic} and show you what really happens...",
-    "Honest Confession: I used to completely misunderstand {topic} until this eye-opening experience...",
-    "Quick Win: Discovered a simple hack related to {topic} that saves me hours every week...",
-    "Lesson Learned: Made a costly mistake with {topic} - here's how you can avoid it...",
-    "Surprising Discovery: Was researching {topic} and stumbled upon something that blew my mind...",
-    "Real Talk: Let's have an honest conversation about {topic} and what nobody wants to admit...",
-    "Game Changer: This one insight about {topic} completely transformed how I approach my work..."
+  storytelling: [
+    "Three months ago, I faced a situation that completely changed my perspective on {topic}.",
+    "The phone call that changed everything: A client asked me something I'd never considered before.",
+    "Walking into that meeting, I had no idea it would teach me the most valuable lesson about {subject}.",
+    "Sometimes the best insights come from unexpected places. Here's what {experience} taught me:",
+    "If someone had told me last year that {situation}, I wouldn't have believed them. But here's what happened:"
   ],
-  inspirational: [
-    "Transformation Story: How embracing {topic} changed not just my career, but my entire perspective...",
-    "Overcome Challenge: The biggest obstacle I faced with {topic} became my greatest strength - here's how...",
-    "Vision Casting: Imagine a world where {topic} is accessible to everyone - here's how we get there...",
-    "Breaking Barriers: Society tells us {topic} is only for certain people. I'm here to prove that wrong...",
-    "Rise Above: When everyone said {topic} was impossible, one person proved them wrong. That person could be you...",
-    "Purpose-Driven: How finding my 'why' in {topic} led to unprecedented success and fulfillment...",
-    "Legacy Building: What if your approach to {topic} could inspire the next generation of leaders?...",
-    "Mindset Shift: The day I stopped seeing {topic} as a challenge and started seeing it as an opportunity..."
+  insightful: [
+    "The data doesn't lie: {statistic} of professionals are struggling with {challenge} in 2025.",
+    "Here's a contrarian view on {popular_topic} that most people won't tell you:",
+    "While everyone is talking about {trend}, the real opportunity lies in {alternative_approach}.",
+    "I've analyzed {number} {industry} trends, and here's the pattern most people are missing:",
+    "The intersection of {field1} and {field2} is creating unprecedented opportunities. Here's why:"
+  ],
+  motivational: [
+    "Your biggest limitation isn't your skills, your network, or your experience. It's {limiting_belief}.",
+    "Every expert was once a beginner. Every pro was once an amateur. Here's how to accelerate your growth:",
+    "The difference between those who succeed and those who don't? It's not what you think:",
+    "Stop waiting for permission to {action}. In 2025, the opportunities are there for those who take them.",
+    "The career advice that changed my trajectory: {advice}. Here's how you can apply it:"
   ]
 };
 
-const industryInsights = {
-  technology: "emerging tech trends, digital transformation, innovation cycles",
-  business: "market dynamics, strategic planning, operational excellence",
-  marketing: "consumer behavior, brand building, digital strategies",
-  leadership: "team development, organizational culture, decision-making",
-  career: "professional growth, skill development, networking strategies",
-  entrepreneurship: "startup challenges, business validation, scaling strategies",
-  finance: "market analysis, investment strategies, economic trends",
-  healthcare: "patient care, medical innovation, healthcare systems"
-};
+const industryContexts = [
+  "technology", "finance", "healthcare", "education", "marketing", "sales", "consulting", 
+  "entrepreneurship", "leadership", "project management", "human resources", "operations",
+  "artificial intelligence", "data science", "cybersecurity", "sustainability", "remote work"
+];
 
-const getEnhancedPrompt = (prompt: string, tone: string, length: string) => {
-  const frameworks = contentFrameworks[tone as keyof typeof contentFrameworks] || contentFrameworks.professional;
-  const randomFramework = frameworks[Math.floor(Math.random() * frameworks.length)];
-  const enhancedFramework = randomFramework.replace('{topic}', prompt);
-  
-  const lengthGuide = {
-    short: "Write 150-250 words. Be concise but impactful.",
-    medium: "Write 300-500 words. Provide substantial value with detailed insights.",
-    long: "Write 600-900 words. Create comprehensive, in-depth content with multiple perspectives and actionable takeaways."
+const generateVariableContent = (template: string, contentType: string, prompt: string) => {
+  const variables = {
+    industry: industryContexts[Math.floor(Math.random() * industryContexts.length)],
+    topic: prompt.toLowerCase(),
+    experience: Math.floor(Math.random() * 15) + 5,
+    field: contentType,
+    insight: "authenticity and genuine connection drive real results",
+    challenge: "balancing innovation with practical implementation",
+    unique_perspective: "the human element is more crucial than ever in our AI-driven world",
+    old_belief: "success meant working harder and longer hours",
+    new_understanding: "strategic thinking and intentional action create more impact",
+    subject: prompt.toLowerCase(),
+    situation: "remote collaboration would become the norm across all industries",
+    statistic: `${Math.floor(Math.random() * 30) + 60}%`,
+    popular_topic: prompt.toLowerCase(),
+    alternative_approach: "focusing on fundamental principles rather than trendy tactics",
+    number: Math.floor(Math.random() * 500) + 100,
+    field1: "technology",
+    field2: "human psychology",
+    limiting_belief: "thinking you need permission to share your expertise",
+    action: "share your insights and build your thought leadership",
+    advice: "focus on solving real problems, not just following trends"
   };
 
-  return `You are an expert LinkedIn content creator and thought leader. Create highly engaging, original content following this framework: "${enhancedFramework}"
-
-CONTENT REQUIREMENTS:
-- ${lengthGuide[length as keyof typeof lengthGuide]}
-- Write in a ${tone} tone that feels authentic and conversational
-- Include specific, actionable insights (not generic advice)
-- Add relevant statistics, examples, or personal anecdotes when appropriate
-- Structure with clear paragraphs and smooth flow
-- End with an engaging question or call-to-action
-- Include 3-5 strategic hashtags that are specific to the topic
-- Make it feel personal and genuine, not corporate or sales-y
-- Focus on providing real value that readers can immediately apply
-
-AVOID:
-- Generic motivational quotes
-- Overly formal corporate speak
-- Repetitive content patterns
-- Vague statements without substance
-- Self-promotional content
-
-Topic: ${prompt}
-
-Create content that would genuinely help and engage your professional network.`;
+  let result = template;
+  Object.entries(variables).forEach(([key, value]) => {
+    result = result.replace(new RegExp(`{${key}}`, 'g'), value);
+  });
+  
+  return result;
 };
 
-const generateFallbackContent = (prompt: string, tone: string, length: string) => {
+const generateHighQualityContent = async (prompt: string, tone: string, length: string, contentType: string) => {
+  const templateCategories = Object.keys(contentTemplates);
+  const randomCategory = templateCategories[Math.floor(Math.random() * templateCategories.length)];
+  const templates = contentTemplates[randomCategory];
+  const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+  
+  const opening = generateVariableContent(randomTemplate, contentType, prompt);
+  
+  // Enhanced content structure based on length
+  const lengthConfig = {
+    short: { paragraphs: 2, sentences: 3, hooks: 1 },
+    medium: { paragraphs: 4, sentences: 4, hooks: 2 },
+    long: { paragraphs: 6, sentences: 5, hooks: 3 }
+  };
+  
+  const config = lengthConfig[length] || lengthConfig.medium;
+  
+  // Core content sections
+  const sections = [
+    `${opening}\n\n`,
+    generateMainContent(prompt, contentType, tone, config),
+    generateActionableInsights(contentType, config),
+    generateCallToAction(tone, contentType)
+  ];
+  
+  return sections.join('\n');
+};
+
+const generateMainContent = (prompt: string, contentType: string, tone: string, config: any) => {
   const insights = [
-    `The evolution of ${prompt} is reshaping how we approach professional challenges. Here's what I've learned from recent industry developments:`,
-    `After extensive research into ${prompt}, I've identified three key factors that separate successful professionals from the rest:`,
-    `The misconceptions about ${prompt} are costing professionals valuable opportunities. Let me share a different perspective:`,
-    `My recent deep-dive into ${prompt} revealed surprising patterns that could transform your approach:`,
-    `The future of ${prompt} isn't what most people expect. Based on current trends, here's what's really coming:`
+    `The key insight I've gained about ${prompt.toLowerCase()} is that sustainable success comes from understanding the fundamentals, not chasing every new trend.`,
+    `What most people don't realize about ${prompt.toLowerCase()} is that the real breakthrough happens when you stop trying to be perfect and start focusing on being consistent.`,
+    `In my experience with ${prompt.toLowerCase()}, the biggest game-changer has been shifting from a reactive to a proactive mindset.`,
+    `Here's what I've learned about ${prompt.toLowerCase()}: the most successful approaches are often the simplest ones, executed with precision.`
   ];
-
-  const actionables = [
-    "Focus on building systems rather than just setting goals",
-    "Prioritize learning from adjacent industries and cross-functional insights",
-    "Develop a contrarian thesis and test it with small experiments",
-    "Create feedback loops that help you iterate and improve continuously",
-    "Build strategic relationships before you need them",
-    "Document your lessons learned to compound knowledge over time",
-    "Stay curious about why conventional wisdom might be wrong",
-    "Invest time in understanding the 'why' behind successful patterns"
+  
+  const examples = [
+    `For instance, when I was working on a recent project involving ${prompt.toLowerCase()}, I discovered that taking a step back and analyzing the core problem led to a solution that was both elegant and effective.`,
+    `A practical example: Last month, a colleague approached me with a challenge related to ${prompt.toLowerCase()}. By applying these principles, we were able to reduce complexity by 40% while improving outcomes.`,
+    `To illustrate this point: I recently observed how two different teams tackled similar ${prompt.toLowerCase()} challenges. The team that focused on principles over procedures achieved significantly better results.`
   ];
+  
+  return [
+    insights[Math.floor(Math.random() * insights.length)],
+    examples[Math.floor(Math.random() * examples.length)]
+  ].join('\n\n');
+};
 
-  const hashtags = [
-    "#ProfessionalGrowth #Leadership #Innovation #Strategy #CareerDevelopment",
-    "#ThoughtLeadership #BusinessStrategy #ProfessionalDevelopment #Innovation #Growth",
-    "#CareerAdvice #Leadership #ProfessionalInsights #SuccessStrategy #WorkSmarter",
-    "#BusinessInnovation #ProfessionalSkills #LeadershipDevelopment #StrategyExecution #GrowthMindset",
-    "#IndustryInsights #ProfessionalExcellence #CareerStrategy #BusinessDevelopment #Leadership"
+const generateActionableInsights = (contentType: string, config: any) => {
+  const insights = [
+    "Here are three actionable strategies that can make an immediate difference:",
+    "Based on my experience, these approaches consistently deliver results:",
+    "If you're looking to implement this effectively, consider these key factors:"
   ];
+  
+  const actions = [
+    "• Start with small, measurable experiments rather than sweeping changes",
+    "• Focus on building systems that support long-term growth, not just quick wins",
+    "• Invest time in understanding your audience's actual needs, not what you think they need",
+    "• Create feedback loops that help you adjust course quickly when something isn't working",
+    "• Build partnerships and networks that align with your values and goals",
+    "• Prioritize learning and adaptation over perfection and rigidity"
+  ];
+  
+  const selectedActions = actions.sort(() => 0.5 - Math.random()).slice(0, 3);
+  
+  return `${insights[Math.floor(Math.random() * insights.length)]}\n\n${selectedActions.join('\n')}`;
+};
 
-  const randomInsight = insights[Math.floor(Math.random() * insights.length)];
-  const randomActionables = actionables.sort(() => 0.5 - Math.random()).slice(0, 4);
-  const randomHashtags = hashtags[Math.floor(Math.random() * hashtags.length)];
-
-  const baseContent = `${randomInsight}
-
-${randomActionables.map((item, index) => `${index + 1}. ${item}`).join('\n')}
-
-The professionals who thrive in today's environment aren't just adapting to change—they're anticipating it and positioning themselves accordingly.
-
-What's your experience with ${prompt}? I'd love to hear your insights in the comments.
-
-${randomHashtags}`;
-
-  // Adjust length based on requirement
-  if (length === 'long') {
-    return baseContent + `
-
-🔍 Key Takeaway: The most successful professionals I know don't just consume information—they synthesize it, experiment with it, and share their learnings with others.
-
-This creates a virtuous cycle of continuous improvement that compounds over time. Every challenge becomes a learning opportunity, every setback becomes valuable data.
-
-The question isn't whether change will happen in your industry—it's whether you'll be ready when it does.`;
-  } else if (length === 'short') {
-    return `${randomInsight}
-
-Quick insights:
-• ${randomActionables[0]}
-• ${randomActionables[1]}
-• ${randomActionables[2]}
-
-What's your take on ${prompt}? Share your thoughts below!
-
-${randomHashtags}`;
-  }
-
-  return baseContent;
+const generateCallToAction = (tone: string, contentType: string) => {
+  const ctas = [
+    "What's your experience with this approach? I'd love to hear your perspective in the comments.",
+    "Have you encountered similar challenges? Share your strategies – let's learn from each other.",
+    "What's one insight from your experience that others might benefit from? Drop it below.",
+    "I'm curious: How do you approach these situations in your field? Let's start a conversation.",
+    "What would you add to this list? Your insights could help others in our network."
+  ];
+  
+  return `\n${ctas[Math.floor(Math.random() * ctas.length)]}\n\n#LinkedInContent #ProfessionalDevelopment #${contentType.charAt(0).toUpperCase() + contentType.slice(1)} #Leadership2025`;
 };
 
 serve(async (req) => {
@@ -164,109 +164,117 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, tone = 'professional', length = 'medium', type = 'content' } = await req.json();
+    const { prompt, tone = 'professional', length = 'medium', contentType = 'general' } = await req.json();
     
-    console.log('Enhanced content generation request:', { prompt, tone, length, type });
-    console.log('Available APIs:', { 
-      anthropic: !!ANTHROPIC_API_KEY, 
-      openai: !!OPENAI_API_KEY 
-    });
-
-    let generatedContent = '';
-
-    // Try Anthropic Claude first with enhanced prompts
-    if (ANTHROPIC_API_KEY) {
-      try {
-        console.log('Attempting enhanced generation with Claude...');
-        
-        const enhancedPrompt = getEnhancedPrompt(prompt, tone, length);
-        const maxTokens = length === 'short' ? 400 : length === 'medium' ? 800 : 1200;
-        
-        const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${ANTHROPIC_API_KEY}`,
-            'Content-Type': 'application/json',
-            'anthropic-version': '2023-06-01'
-          },
-          body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: maxTokens,
-            messages: [
-              { role: 'user', content: enhancedPrompt }
-            ],
-            temperature: 0.9 // Higher creativity
-          })
-        });
-
-        if (claudeResponse.ok) {
-          const claudeData = await claudeResponse.json();
-          generatedContent = claudeData.content[0]?.text || '';
-          console.log('Successfully generated enhanced content with Claude');
-        } else {
-          const errorData = await claudeResponse.text();
-          console.log('Claude failed:', claudeResponse.status, errorData);
-        }
-      } catch (error) {
-        console.log('Claude error:', error.message);
-      }
+    if (!prompt?.trim()) {
+      return new Response(JSON.stringify({ 
+        error: 'Please provide a topic or prompt for content generation' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Try OpenAI with enhanced prompts if Claude failed
-    if (!generatedContent && OPENAI_API_KEY) {
-      try {
-        console.log('Attempting enhanced generation with OpenAI...');
-        
-        const enhancedPrompt = getEnhancedPrompt(prompt, tone, length);
-        const maxTokens = length === 'short' ? 500 : length === 'medium' ? 900 : 1300;
+    console.log('Generating enhanced content for:', { prompt, tone, length, contentType });
 
+    // Try OpenAI first, then Anthropic, then high-quality fallback
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+    if (openaiKey) {
+      try {
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${openaiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: 'gpt-4o',
             messages: [
-              { role: 'user', content: enhancedPrompt }
+              {
+                role: 'system',
+                content: `You are a LinkedIn content expert creating engaging, professional posts for 2025. Create authentic, valuable content that drives engagement. Use storytelling, data insights, and actionable advice. Keep it conversational yet professional. Current year: 2025.`
+              },
+              {
+                role: 'user',
+                content: `Create a ${length} LinkedIn post about "${prompt}" with a ${tone} tone for ${contentType} content. Include specific examples, actionable insights, and end with an engaging question. Make it feel authentic and valuable, not generic. Target length: ${length === 'short' ? '200-300' : length === 'medium' ? '400-600' : '700-1000'} words.`
+              }
             ],
-            max_tokens: maxTokens,
+            max_tokens: length === 'short' ? 400 : length === 'medium' ? 800 : 1200,
             temperature: 0.8,
-            presence_penalty: 0.7,
-            frequency_penalty: 0.6,
+            presence_penalty: 0.3,
+            frequency_penalty: 0.5,
           }),
         });
 
         if (openaiResponse.ok) {
-          const openaiData = await openaiResponse.json();
-          generatedContent = openaiData.choices[0]?.message?.content || '';
-          console.log('Successfully generated enhanced content with OpenAI');
-        } else {
-          const errorData = await openaiResponse.text();
-          console.log('OpenAI failed:', openaiResponse.status, errorData);
+          const data = await openaiResponse.json();
+          const content = data.choices[0]?.message?.content;
+          if (content) {
+            console.log('Generated content with OpenAI successfully');
+            return new Response(JSON.stringify({ content, source: 'openai' }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
         }
       } catch (error) {
-        console.log('OpenAI error:', error.message);
+        console.log('OpenAI failed, trying Anthropic:', error.message);
       }
     }
 
-    // Enhanced fallback content if all AI services fail
-    if (!generatedContent) {
-      console.log('All AI services failed, using enhanced fallback content');
-      generatedContent = generateFallbackContent(prompt, tone, length);
+    if (anthropicKey) {
+      try {
+        const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': anthropicKey,
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-sonnet-20240229',
+            max_tokens: length === 'short' ? 400 : length === 'medium' ? 800 : 1200,
+            temperature: 0.8,
+            messages: [{
+              role: 'user',
+              content: `Create a compelling ${length} LinkedIn post about "${prompt}" with a ${tone} tone for ${contentType} content. Make it engaging, authentic, and valuable for professionals in 2025. Include specific examples and end with a thought-provoking question. Target: ${length === 'short' ? '200-300' : length === 'medium' ? '400-600' : '700-1000'} words.`
+            }]
+          }),
+        });
+
+        if (anthropicResponse.ok) {
+          const data = await anthropicResponse.json();
+          const content = data.content[0]?.text;
+          if (content) {
+            console.log('Generated content with Anthropic successfully');
+            return new Response(JSON.stringify({ content, source: 'anthropic' }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        }
+      } catch (error) {
+        console.log('Anthropic failed, using enhanced fallback:', error.message);
+      }
     }
 
-    return new Response(JSON.stringify({ content: generatedContent }), {
+    // Enhanced fallback content generation
+    console.log('Using enhanced fallback content generation');
+    const fallbackContent = await generateHighQualityContent(prompt, tone, length, contentType);
+    
+    return new Response(JSON.stringify({ 
+      content: fallbackContent, 
+      source: 'enhanced_fallback',
+      note: 'Generated using advanced templates. For best results, configure OpenAI or Anthropic API keys in settings.'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in enhanced generate-content function:', error);
-    
+    console.error('Content generation error:', error);
     return new Response(JSON.stringify({ 
-      error: 'Content generation service temporarily unavailable. Please try again.',
-      success: false
+      error: 'Content generation temporarily unavailable. Please try again.',
+      details: error.message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
