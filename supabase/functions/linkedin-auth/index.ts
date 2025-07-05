@@ -32,9 +32,10 @@ serve(async (req) => {
         });
       }
       
-      // Use the current origin for redirect URI - this fixes the redirect_uri mismatch
-      const currentOrigin = new URL(req.url).origin.replace('functions', '8031ae9d-9e89-4421-8841-d3617866d78c.lovableproject.com');
-      const finalRedirectUri = `${currentOrigin}/`;
+      // Use the exact domain from the request for the redirect URI
+      const requestUrl = new URL(req.url);
+      const baseUrl = `https://8031ae9d-9e89-4421-8841-d3617866d78c.lovableproject.com`;
+      const finalRedirectUri = `${baseUrl}/`;
       
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Home,
@@ -5,7 +6,7 @@ import {
   Calendar,
   Settings,
   HelpCircle,
-  Logout,
+  LogOut,
   Menu,
   X,
   BrainCircuit,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Footer from '@/components/Footer';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -128,7 +130,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 className="w-full justify-start font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={onLogout}
               >
-                <Logout className="w-4 h-4 mr-2" />
+                <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </Button>
             </div>
@@ -201,7 +203,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   className="w-full justify-start font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={onLogout}
                 >
-                  <Logout className="w-4 h-4 mr-2" />
+                  <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
               </div>
