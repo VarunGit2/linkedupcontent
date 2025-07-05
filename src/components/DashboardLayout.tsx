@@ -36,6 +36,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onNavigate
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -69,69 +70,83 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </header>
 
       <div className="flex flex-1">
-        {/* Desktop Sidebar */}
-        <aside className={`hidden lg:flex lg:flex-col lg:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300`}>
+        {/* Desktop Sidebar - Collapsible */}
+        <aside 
+          className={`hidden lg:flex lg:flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
+            isHovered ? 'w-64' : 'w-16'
+          }`}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           <div className="flex flex-col h-full p-4">
             <div className="flex items-center space-x-2 mb-6">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">LU</span>
               </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                LinkedUp
-              </span>
+              {isHovered && (
+                <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  LinkedUp
+                </span>
+              )}
             </div>
 
             <nav className="flex-1 space-y-1">
               <Button
                 variant="ghost"
-                className={`w-full justify-start font-normal ${currentPage === 'create-content' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'create-content' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 onClick={() => handleNavigation('create-content')}
+                title={!isHovered ? 'Create Content' : ''}
               >
-                <LayoutDashboard className="w-4 h-4 mr-2" />
-                Create Content
+                <LayoutDashboard className="w-4 h-4" />
+                {isHovered && <span className="ml-2">Create Content</span>}
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start font-normal ${currentPage === 'generate-ideas' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'generate-ideas' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 onClick={() => handleNavigation('generate-ideas')}
+                title={!isHovered ? 'Generate Ideas' : ''}
               >
-                <BrainCircuit className="w-4 h-4 mr-2" />
-                Generate Ideas
+                <BrainCircuit className="w-4 h-4" />
+                {isHovered && <span className="ml-2">Generate Ideas</span>}
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start font-normal ${currentPage === 'schedule-posts' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'schedule-posts' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 onClick={() => handleNavigation('schedule-posts')}
+                title={!isHovered ? 'Schedule Posts' : ''}
               >
-                <Calendar className="w-4 h-4 mr-2" />
-                Schedule Posts
+                <Calendar className="w-4 h-4" />
+                {isHovered && <span className="ml-2">Schedule Posts</span>}
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start font-normal ${currentPage === 'profile' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'profile' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 onClick={() => handleNavigation('profile')}
+                title={!isHovered ? 'Profile' : ''}
               >
-                <User className="w-4 h-4 mr-2" />
-                Profile
+                <User className="w-4 h-4" />
+                {isHovered && <span className="ml-2">Profile</span>}
               </Button>
               <Button
                 variant="ghost"
-                className={`w-full justify-start font-normal ${currentPage === 'settings' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'settings' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 onClick={() => handleNavigation('settings')}
+                title={!isHovered ? 'Settings' : ''}
               >
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
+                <Settings className="w-4 h-4" />
+                {isHovered && <span className="ml-2">Settings</span>}
               </Button>
             </nav>
 
             <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button
                 variant="ghost"
-                className="w-full justify-start font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700`}
                 onClick={onLogout}
+                title={!isHovered ? 'Logout' : ''}
               >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                <LogOut className="w-4 h-4" />
+                {isHovered && <span className="ml-2">Logout</span>}
               </Button>
             </div>
           </div>

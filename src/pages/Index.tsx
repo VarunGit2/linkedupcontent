@@ -105,14 +105,14 @@ const Index = () => {
 
       if (code && state && state === storedState) {
         try {
-          // Use the current origin for redirect URI to match what was sent
-          const currentOrigin = window.location.origin;
+          // Use the current URL as redirect URI
+          const currentUrl = window.location.origin + window.location.pathname;
           
           const { data, error } = await supabase.functions.invoke('linkedin-auth', {
             body: {
               action: 'exchangeCode',
               code: code,
-              redirectUri: `${currentOrigin}/`
+              redirectUri: currentUrl
             }
           });
 

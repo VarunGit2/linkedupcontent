@@ -32,10 +32,8 @@ serve(async (req) => {
         });
       }
       
-      // Use the exact domain from the request for the redirect URI
-      const requestUrl = new URL(req.url);
-      const baseUrl = `https://8031ae9d-9e89-4421-8841-d3617866d78c.lovableproject.com`;
-      const finalRedirectUri = `${baseUrl}/`;
+      // Use the exact redirect URI - no modifications
+      const finalRedirectUri = redirectUri || `${new URL(req.url).origin}/`;
       
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
