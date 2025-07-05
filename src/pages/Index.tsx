@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import LoginPage from '@/components/LoginPage';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -7,6 +6,8 @@ import GenerateIdeas from '@/components/GenerateIdeas';
 import SchedulePosts from '@/components/SchedulePosts';
 import ProfileSettings from '@/components/ProfileSettings';
 import ProfileView from '@/components/ProfileView';
+import PrivacyPolicy from '@/components/PrivacyPolicy';
+import TermsOfService from '@/components/TermsOfService';
 import Chatbot from '@/components/Chatbot';
 import SuggestionBox from '@/components/SuggestionBox';
 import Footer from '@/components/Footer';
@@ -43,6 +44,13 @@ const Index = () => {
             setIsLoading(false);
             return;
           }
+          
+          // Clear any auth error parameters from URL after successful login
+          const url = new URL(window.location.href);
+          if (url.searchParams.has('error') || url.searchParams.has('error_description')) {
+            url.search = '';
+            window.history.replaceState({}, document.title, url.toString());
+          }
         }
         
         setSession(session);
@@ -74,15 +82,37 @@ const Index = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const state = urlParams.get('state');
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+      
+      // Handle OAuth errors
+      if (error) {
+        console.error('LinkedIn OAuth error:', error, errorDescription);
+        toast({
+          title: "LinkedIn Connection Failed",
+          description: errorDescription || "Please try connecting again from Profile Settings.",
+          variant: "destructive",
+        });
+        
+        // Clean up URL
+        const url = new URL(window.location.href);
+        url.search = '';
+        window.history.replaceState({}, document.title, url.toString());
+        return;
+      }
+
       const storedState = localStorage.getItem('linkedin-oauth-state');
 
       if (code && state && state === storedState) {
         try {
+          // Use the current origin for redirect URI to match what was sent
+          const currentOrigin = window.location.origin;
+          
           const { data, error } = await supabase.functions.invoke('linkedin-auth', {
             body: {
               action: 'exchangeCode',
               code: code,
-              redirectUri: window.location.origin + '/'
+              redirectUri: `${currentOrigin}/`
             }
           });
 
@@ -198,6 +228,18 @@ const Index = () => {
             onBack={() => setCurrentPage('create-content')}
           />
         );
+      case 'privacy-policy':
+        return (
+          <PrivacyPolicy 
+            onBack={() => setCurrentPage('create-content')}
+          />
+        );
+      case 'terms-of-service':
+        return (
+          <TermsOfService 
+            onBack={() => setCurrentPage('create-content')}
+          />
+        );
       default:
         return <CreateContent />;
     }
@@ -245,7 +287,6 @@ const Index = () => {
         </div>
       </DashboardLayout>
       
-      <Footer />
       <Chatbot />
       <SuggestionBox 
         isOpen={showSuggestionBox} 
