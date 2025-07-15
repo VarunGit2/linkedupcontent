@@ -24,7 +24,7 @@ serve(async (req) => {
       if (!clientId) {
         console.error('LinkedIn Client ID not configured');
         return new Response(JSON.stringify({ 
-          error: 'LinkedIn integration not configured. Please contact support.',
+          error: 'LinkedIn integration not configured. Please add LINKEDIN_CLIENT_ID in Supabase secrets.',
           needsConfig: true 
         }), {
           status: 400,
@@ -32,15 +32,16 @@ serve(async (req) => {
         });
       }
       
-      // Use the exact redirect URI - no modifications
-      const finalRedirectUri = redirectUri || `${new URL(req.url).origin}/`;
+      // Use the exact redirect URI from the request
+      const finalRedirectUri = redirectUri;
       
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
       
       const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
       
-      console.log('Generated LinkedIn auth URL with redirect:', finalRedirectUri);
+      console.log('Generated LinkedIn auth URL:', authUrl);
+      console.log('Redirect URI:', finalRedirectUri);
       
       return new Response(JSON.stringify({ 
         authUrl, 
@@ -56,7 +57,7 @@ serve(async (req) => {
       if (!clientId || !clientSecret) {
         console.error('LinkedIn credentials not fully configured');
         return new Response(JSON.stringify({ 
-          error: 'LinkedIn integration not fully configured. Please contact support.',
+          error: 'LinkedIn integration not fully configured. Please add both LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in Supabase secrets.',
           needsConfig: true 
         }), {
           status: 400,
@@ -75,6 +76,7 @@ serve(async (req) => {
       }
 
       console.log('Exchanging authorization code for access token...');
+      console.log('Using redirect URI:', redirectUri);
 
       // Step 1: Exchange code for access token
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -96,7 +98,7 @@ serve(async (req) => {
         const errorText = await tokenResponse.text();
         console.error('Token exchange failed:', tokenResponse.status, errorText);
         return new Response(JSON.stringify({ 
-          error: 'Failed to authenticate with LinkedIn. Please try again.',
+          error: `LinkedIn authentication failed: ${errorText}. Please check your LinkedIn app configuration.`,
           success: false 
         }), {
           status: 400,
@@ -119,7 +121,7 @@ serve(async (req) => {
         const errorText = await profileResponse.text();
         console.error('Profile fetch failed:', profileResponse.status, errorText);
         return new Response(JSON.stringify({ 
-          error: 'Failed to fetch LinkedIn profile. Please try again.',
+          error: `Failed to fetch LinkedIn profile: ${errorText}`,
           success: false 
         }), {
           status: 400,
@@ -128,7 +130,7 @@ serve(async (req) => {
       }
 
       const profileData = await profileResponse.json();
-      console.log('LinkedIn profile fetched successfully');
+      console.log('LinkedIn profile fetched successfully for:', profileData.name);
 
       // Enhanced profile data
       const enhancedProfile = {
@@ -161,7 +163,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('LinkedIn auth error:', error);
     return new Response(JSON.stringify({ 
-      error: 'LinkedIn authentication service temporarily unavailable. Please try again later.',
+      error: `LinkedIn authentication error: ${error.message}`,
       success: false 
     }), {
       status: 500,

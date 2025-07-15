@@ -76,7 +76,7 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [toast]);
 
-  // Handle LinkedIn OAuth callback
+  // Handle LinkedIn OAuth callback with improved error handling
   useEffect(() => {
     const handleLinkedInCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -90,7 +90,7 @@ const Index = () => {
         console.error('LinkedIn OAuth error:', error, errorDescription);
         toast({
           title: "LinkedIn Connection Failed",
-          description: errorDescription || "Please try connecting again from Profile Settings.",
+          description: errorDescription || "Please check your LinkedIn app configuration and try again.",
           variant: "destructive",
         });
         
@@ -105,8 +105,10 @@ const Index = () => {
 
       if (code && state && state === storedState) {
         try {
-          // Use the current URL as redirect URI
-          const currentUrl = window.location.origin + window.location.pathname;
+          // Use the exact current URL as redirect URI (no trailing slash)
+          const currentUrl = window.location.origin + window.location.pathname.replace(/\/$/, '');
+          
+          console.log('Exchanging LinkedIn code with redirect URI:', currentUrl);
           
           const { data, error } = await supabase.functions.invoke('linkedin-auth', {
             body: {
@@ -116,7 +118,10 @@ const Index = () => {
             }
           });
 
-          if (error) throw error;
+          if (error) {
+            console.error('Supabase function error:', error);
+            throw error;
+          }
 
           if (data?.success) {
             localStorage.setItem('linkedin-connected', 'true');
@@ -131,8 +136,8 @@ const Index = () => {
             window.history.replaceState({}, document.title, url.toString());
 
             toast({
-              title: "LinkedIn Connected Successfully! 🎉",
-              description: `Welcome ${data.profile.name}! You can now schedule and publish posts.`,
+              title: "🎉 LinkedIn Connected Successfully!",
+              description: `Welcome ${data.profile.name}! You can now schedule and publish posts to LinkedIn.`,
             });
 
             // Navigate to schedule posts
@@ -151,7 +156,7 @@ const Index = () => {
 
           toast({
             title: "LinkedIn Connection Failed",
-            description: "Please try connecting again from Profile Settings.",
+            description: "Please check your LinkedIn app configuration in Supabase secrets and try again.",
             variant: "destructive",
           });
         }
