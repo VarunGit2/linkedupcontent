@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,12 +78,9 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
 
   const handleLinkedInConnect = async () => {
     setIsConnecting(true);
-    localStorage.removeItem('linkedin-oauth-state');
     
     try {
-      // Use the preview URL as redirect URI
-      const redirectUri = 'https://preview--linkedupcontent.lovable.app';
-      
+      const redirectUri = window.location.origin;
       console.log('Using redirect URI:', redirectUri);
       
       const { data, error } = await supabase.functions.invoke('linkedin-auth', {
@@ -95,14 +91,14 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
       });
 
       if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
+        console.error('LinkedIn auth error:', error);
+        throw new Error(error.message || 'Failed to get LinkedIn auth URL');
       }
 
       if (data?.needsConfig) {
         toast({
           title: "LinkedIn Setup Required",
-          description: "Please configure LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in Supabase secrets first.",
+          description: "Please configure LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in Supabase Edge Function Secrets.",
           variant: "destructive",
         });
         return;
@@ -111,16 +107,15 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
       if (data?.authUrl && data?.state) {
         localStorage.setItem('linkedin-oauth-state', data.state);
         localStorage.setItem('linkedin-redirect-uri', redirectUri);
-        console.log('Redirecting to:', data.authUrl);
         window.location.href = data.authUrl;
       } else {
-        throw new Error('Failed to retrieve LinkedIn authentication URL.');
+        throw new Error('Failed to retrieve LinkedIn authentication URL');
       }
     } catch (error: any) {
       console.error('LinkedIn connection error:', error);
       toast({
-        title: "Connection Error",
-        description: error.message || "Failed to connect to LinkedIn. Please check your configuration.",
+        title: "Connection Failed",
+        description: error.message || "Failed to connect to LinkedIn",
         variant: "destructive",
       });
     } finally {
@@ -145,13 +140,12 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
-      {/* Header with back button */}
       <div className="flex items-center gap-4">
         <Button
           onClick={onBack}
           variant="ghost"
           size="sm"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 hover:bg-gray-100"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -161,13 +155,13 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
             Profile Settings
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-1 text-base sm:text-lg">
-            Manage your profile information and connected accounts
+            Manage your profile and connected accounts
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        {/* Profile Settings */}
+        {/* Profile Settings Card */}
         <Card className="border-l-4 border-l-green-500 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
             <CardTitle className="flex items-center gap-2">
@@ -196,7 +190,6 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
                 id="profileEmail"
                 placeholder="Your Email Address"
                 value={profileEmail}
-                onChange={(e) => setProfileEmail(e.target.value)}
                 disabled={true}
               />
             </div>
@@ -206,7 +199,7 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
           </CardContent>
         </Card>
 
-        {/* LinkedIn Integration */}
+        {/* LinkedIn Integration Card */}
         <Card className="border-l-4 border-l-blue-500 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
             <CardTitle className="flex items-center gap-2">
@@ -214,21 +207,19 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
               LinkedIn Integration
             </CardTitle>
             <CardDescription>
-              Connect your LinkedIn account to schedule and publish posts directly
+              Connect your LinkedIn account to publish posts
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             {isLinkedInConnected ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
                   <CheckCircle className="h-5 w-5 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-900 dark:text-green-100">
-                      LinkedIn Connected Successfully!
-                    </p>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      {linkedInProfile?.name && `Connected as: ${linkedInProfile.name}`}
-                    </p>
+                    <p className="font-medium text-green-900">LinkedIn Connected!</p>
+                    {linkedInProfile?.name && (
+                      <p className="text-sm text-green-700">Connected as: {linkedInProfile.name}</p>
+                    )}
                   </div>
                 </div>
                 <Button 
@@ -242,22 +233,20 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-amber-900 dark:text-amber-100 mb-2">
-                        LinkedIn Setup Required
+                      <p className="font-medium text-amber-900 mb-2">Setup Required</p>
+                      <p className="text-sm text-amber-700 mb-3">
+                        Configure in Supabase Edge Function Secrets:
                       </p>
-                      <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                        Configure these in Supabase Edge Function Secrets:
-                      </p>
-                      <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1 ml-4">
+                      <ul className="text-sm text-amber-700 space-y-1 ml-4">
                         <li>• LINKEDIN_CLIENT_ID</li>
                         <li>• LINKEDIN_CLIENT_SECRET</li>
                       </ul>
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                        Set your LinkedIn app redirect URI to: https://preview--linkedupcontent.lovable.app
+                      <p className="text-xs text-amber-600 mt-2">
+                        Set redirect URI to: {window.location.origin}
                       </p>
                     </div>
                   </div>
@@ -276,7 +265,7 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
                   ) : (
                     <>
                       <Linkedin className="mr-2 h-4 w-4" />
-                      Connect LinkedIn Account
+                      Connect LinkedIn
                     </>
                   )}
                 </Button>
@@ -293,19 +282,17 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
               AI Content Generation
             </CardTitle>
             <CardDescription>
-              Configure AI providers for premium content generation
+              Add API keys for better content quality
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6 space-y-4">
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-start gap-3">
                 <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
                 <div>
-                  <p className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                    Premium AI Integration
-                  </p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-                    Add these API keys in Supabase Edge Function Secrets for high-quality content:
+                  <p className="font-medium text-blue-900 mb-2">Premium AI Keys</p>
+                  <p className="text-sm text-blue-700 mb-3">
+                    Add these in Supabase Edge Function Secrets:
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div className="space-y-2">
@@ -313,23 +300,18 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         <span className="font-medium">GROQ_API_KEY</span>
                       </div>
-                      <p className="text-gray-600 text-xs ml-4">Fast & Creative (Recommended for best results)</p>
+                      <p className="text-gray-600 text-xs ml-4">Best quality & speed</p>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                         <span className="font-medium">OPENAI_API_KEY</span>
                       </div>
-                      <p className="text-gray-600 text-xs ml-4">GPT-4.1 Premium Quality</p>
+                      <p className="text-gray-600 text-xs ml-4">GPT-4 backup option</p>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p className="mb-2">💡 <strong>Pro Tip:</strong> Groq API provides the best balance of speed and quality for engaging LinkedIn content.</p>
-              <p>Without API keys, the system uses professional templates that still create good content.</p>
             </div>
           </CardContent>
         </Card>

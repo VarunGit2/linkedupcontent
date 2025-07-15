@@ -17,74 +17,79 @@ serve(async (req) => {
     
     if (!prompt?.trim()) {
       return new Response(JSON.stringify({ 
-        error: 'Please provide a topic or prompt for content generation' 
+        error: 'Please provide a topic for content generation' 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Generating premium content for:', { prompt, tone, length, contentType });
+    console.log('Generating content for:', prompt);
 
     // Enhanced system prompt for viral LinkedIn content
-    const systemPrompt = `You are a top-tier LinkedIn content strategist who creates viral posts that get thousands of views and hundreds of comments. Your posts consistently go viral because you understand psychology, storytelling, and what makes people engage.
+    const systemPrompt = `You are a top LinkedIn content creator who writes posts that consistently get 1000+ views and 100+ comments. Your posts go viral because you understand psychology and storytelling.
 
-KEY PRINCIPLES:
-✅ Start with a hook that stops scrolling (curiosity, bold statement, or personal story)
-✅ Use specific examples and real numbers
-✅ Tell stories with clear lessons
-✅ Provide actionable insights people can use immediately
-✅ End with questions that spark discussions
-✅ Write for mobile - short paragraphs, line breaks
-✅ Include 4-6 relevant hashtags naturally
+RULES FOR VIRAL LINKEDIN POSTS:
+1. Hook: Start with something that stops scrolling - a bold statement, surprising fact, or personal story
+2. Story Structure: Problem → Journey → Solution → Lesson
+3. Write like a human: Use "I", "you", contractions, and conversational tone
+4. Short paragraphs: 1-2 sentences max per paragraph
+5. Numbers and specifics: "increased by 340%" not "increased significantly"
+6. End with engagement: Ask a specific question that invites comments
+7. Include 3-5 relevant hashtags
 
-PSYCHOLOGICAL TRIGGERS:
-• Social proof ("After analyzing 1000+ professionals...")
-• Scarcity ("95% miss this strategy...")
-• Authority ("15 years taught me...")
-• Curiosity ("The mistake that changed my career...")
-• Controversy ("Unpopular opinion: networking events are overrated...")
+PSYCHOLOGY TRIGGERS THAT WORK:
+- Curiosity gaps: "The mistake that changed everything..."
+- Social proof: "After analyzing 500+ professionals..."
+- Controversy: "Unpopular opinion: networking events are overrated"
+- Vulnerability: "I failed 3 times before..."
+- Authority: "15 years taught me..."
 
-CONTENT STRUCTURE:
-1. Hook (stop the scroll)
-2. Story/Context (build connection)
-3. Insight/Learning (provide value)
-4. Call to action (encourage engagement)
+FORMAT:
+- Hook (1-2 lines that grab attention)
+- Story/Context (2-3 short paragraphs)
+- Key insight/lesson (1-2 paragraphs)
+- Call to action question
+- Hashtags (3-5 maximum)
 
-Write posts that sound human, not corporate. Be conversational but professional.`;
+Write posts that feel authentic, not corporate. Be specific, not generic.`;
 
-    const lengthSpecs = {
-      short: "300-500 words - punchy and direct with clear value",
-      medium: "600-800 words - comprehensive with examples and actionable insights", 
-      long: "900-1200 words - in-depth analysis with multiple examples and frameworks"
+    const toneAdjustments = {
+      professional: "Maintain authority while being approachable. Use data and insights.",
+      casual: "Be conversational and relatable. Use everyday language and personal anecdotes.",
+      inspirational: "Focus on motivation and transformation. Use emotional storytelling.",
+      educational: "Teach something valuable. Break down complex topics simply.",
+      'thought-leadership': "Share unique perspectives and industry insights. Be provocative but respectful."
     };
 
-    const userPrompt = `Create an engaging LinkedIn post about "${prompt}" with these specifications:
+    const lengthSpecs = {
+      short: "200-300 words - punchy and direct",
+      medium: "400-600 words - detailed with examples", 
+      long: "700-900 words - comprehensive analysis"
+    };
 
-REQUIREMENTS:
-• Tone: ${tone}
-• Length: ${lengthSpecs[length]}
-• Content Focus: ${contentType}
-• Hook: Start with something that makes people stop scrolling
-• Structure: Short paragraphs, line breaks for mobile
-• Value: Specific, actionable insights
-• Engagement: End with a thought-provoking question
-• Hashtags: 4-6 relevant ones
+    const userPrompt = `Write a LinkedIn post about: "${prompt}"
+
+Requirements:
+- Tone: ${tone} (${toneAdjustments[tone] || toneAdjustments.professional})
+- Length: ${lengthSpecs[length]}
+- Content type: ${contentType}
 
 Make it:
-- Personal and authentic (not corporate)
-- Packed with specific examples or data
-- Story-driven with clear takeaways
-- Engaging enough to save and share
-- Professional but conversational
+- Engaging from the first line
+- Personal and specific (not generic corporate speak)
+- Include real examples or scenarios
+- End with a question that sparks discussion
+- Use short paragraphs for mobile reading
+- Add 3-4 relevant hashtags at the end
 
-Focus on providing real value that helps people grow.`;
+Focus on providing genuine value that people will want to save and share.`;
 
-    // Try Groq first (best for creative content)
+    // Try Groq first
     const groqKey = Deno.env.get('GROQ_API_KEY');
     if (groqKey) {
       try {
-        console.log('Generating with Groq API...');
+        console.log('Using Groq for high-quality generation...');
         
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -98,18 +103,18 @@ Focus on providing real value that helps people grow.`;
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
             ],
-            max_tokens: length === 'short' ? 800 : length === 'medium' ? 1200 : 1600,
-            temperature: 0.9,
-            top_p: 0.95,
-            frequency_penalty: 0.6,
-            presence_penalty: 0.4,
+            max_tokens: length === 'short' ? 500 : length === 'medium' ? 800 : 1200,
+            temperature: 0.8,
+            top_p: 0.9,
+            frequency_penalty: 0.5,
+            presence_penalty: 0.3,
           }),
         });
 
         if (groqResponse.ok) {
           const data = await groqResponse.json();
           const content = data.choices[0]?.message?.content;
-          if (content && content.length > 100) {
+          if (content && content.length > 50) {
             console.log('High-quality content generated with Groq');
             return new Response(JSON.stringify({ 
               content, 
@@ -125,11 +130,11 @@ Focus on providing real value that helps people grow.`;
       }
     }
 
-    // Try OpenAI as backup
+    // Try OpenAI
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
     if (openaiKey) {
       try {
-        console.log('Generating with OpenAI...');
+        console.log('Using OpenAI...');
         
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -138,47 +143,45 @@ Focus on providing real value that helps people grow.`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4.1-2025-04-14',
+            model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
             ],
-            max_tokens: length === 'short' ? 800 : length === 'medium' ? 1200 : 1600,
-            temperature: 0.8,
+            max_tokens: length === 'short' ? 500 : length === 'medium' ? 800 : 1200,
+            temperature: 0.7,
             top_p: 0.9,
-            frequency_penalty: 0.5,
-            presence_penalty: 0.3,
           }),
         });
 
         if (openaiResponse.ok) {
           const data = await openaiResponse.json();
           const content = data.choices[0]?.message?.content;
-          if (content && content.length > 100) {
-            console.log('Quality content generated with OpenAI');
+          if (content && content.length > 50) {
+            console.log('Content generated with OpenAI');
             return new Response(JSON.stringify({ 
               content, 
-              source: 'openai_gpt4.1',
-              quality: 'premium' 
+              source: 'openai_gpt4o',
+              quality: 'good' 
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
         }
       } catch (error) {
-        console.log('OpenAI failed, using enhanced template:', error.message);
+        console.log('OpenAI failed, using template:', error.message);
       }
     }
 
-    // Enhanced professional template fallback
-    console.log('Using professional template');
-    const content = generateProfessionalContent(prompt, tone, length, contentType);
+    // Enhanced fallback template
+    console.log('Using enhanced template');
+    const content = generateEnhancedContent(prompt, tone, length);
     
     return new Response(JSON.stringify({ 
       content, 
-      source: 'professional_template',
+      source: 'enhanced_template',
       quality: 'good',
-      note: 'Add GROQ_API_KEY or OPENAI_API_KEY in Supabase secrets for AI-generated content.'
+      note: 'Add GROQ_API_KEY for premium AI content generation'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -186,7 +189,7 @@ Focus on providing real value that helps people grow.`;
   } catch (error) {
     console.error('Content generation error:', error);
     return new Response(JSON.stringify({ 
-      error: 'Content generation failed. Please try again.',
+      error: 'Content generation failed',
       details: error.message 
     }), {
       status: 500,
@@ -195,66 +198,95 @@ Focus on providing real value that helps people grow.`;
   }
 });
 
-function generateProfessionalContent(prompt: string, tone: string, length: string, contentType: string): string {
+function generateEnhancedContent(prompt: string, tone: string, length: string): string {
   const hooks = [
-    `The harsh truth about ${prompt.toLowerCase()} that nobody talks about:`,
-    `After 5 years of working with ${prompt.toLowerCase()}, here's what I've learned:`,
-    `Most people get ${prompt.toLowerCase()} completely wrong. Here's why:`,
-    `The biggest misconception about ${prompt.toLowerCase()}? Let me break it down:`,
-    `I used to struggle with ${prompt.toLowerCase()}. Then everything changed when I discovered this:`
+    `The biggest mistake people make with ${prompt.toLowerCase()}? They think it's about perfection.`,
+    `After 3 years of struggling with ${prompt.toLowerCase()}, I finally cracked the code.`,
+    `Everyone talks about ${prompt.toLowerCase()}, but nobody mentions this crucial detail.`,
+    `I used to hate everything about ${prompt.toLowerCase()}. Then I discovered this approach.`,
+    `The uncomfortable truth about ${prompt.toLowerCase()} that no one wants to admit:`
+  ];
+
+  const stories = [
+    `Last month, I watched a colleague completely transform their approach to ${prompt.toLowerCase()}.
+
+    The results were incredible:
+    • 40% better outcomes in just 2 weeks  
+    • Less stress and more confidence
+    • Finally sustainable progress
+
+    Here's exactly what they did differently...`,
+    
+    `Three months ago, I was completely overwhelmed by ${prompt.toLowerCase()}.
+
+    Nothing seemed to work. Every strategy I tried failed.
+
+    Then I met someone who changed my entire perspective.`,
+    
+    `I'll never forget the conversation that changed how I think about ${prompt.toLowerCase()}.
+
+    My mentor said something that hit me like a brick:
+
+    "You're solving the wrong problem."
+
+    That one sentence shifted everything.`
   ];
 
   const insights = [
-    `${prompt} isn't just about theory—it's about consistent execution and real-world application.`,
-    `The difference between success and failure in ${prompt.toLowerCase()} comes down to three critical factors.`,
-    `Most professionals overcomplicate ${prompt.toLowerCase()}. The solution is actually much simpler.`,
-    `${prompt} becomes exponentially easier when you focus on systems over outcomes.`,
-    `The secret to mastering ${prompt.toLowerCase()}? Start with these fundamentals and build up.`
-  ];
+    `The secret isn't working harder on ${prompt.toLowerCase()}.
 
-  const frameworks = [
-    `My 3-step approach to ${prompt}:`,
-    `The framework that changed my perspective on ${prompt}:`,
-    `Here's the system I use for ${prompt}:`,
-    `The proven method for ${prompt} that actually works:`
-  ];
+    It's about working smarter with these 3 principles:
 
-  const actionItems = [
-    `Start by auditing your current approach to ${prompt.toLowerCase()}`,
-    `Focus on one core aspect of ${prompt.toLowerCase()} and master it completely`,
-    `Track your progress with specific, measurable metrics`,
-    `Connect with others who have succeeded in ${prompt.toLowerCase()}`,
-    `Test different strategies and iterate based on results`
+    1. Focus on systems, not goals
+    2. Progress beats perfection every time  
+    3. Consistency compounds exponentially
+
+    Most people skip step 1 and wonder why they struggle.`,
+    
+    `${prompt} becomes 10x easier when you understand this framework:
+
+    → Identify the core problem (not the symptoms)
+    → Design the minimum viable solution  
+    → Test, measure, and iterate quickly
+    → Scale what works, eliminate what doesn't
+
+    It's simple, but not easy.`,
+    
+    `The breakthrough came when I stopped trying to do ${prompt.toLowerCase()} perfectly.
+
+    Instead, I focused on:
+    • Small, consistent actions daily
+    • Learning from every mistake
+    • Celebrating small wins
+    • Building momentum over time
+
+    Progress over perfection always wins.`
   ];
 
   const questions = [
     `What's been your biggest challenge with ${prompt.toLowerCase()}?`,
-    `How do you approach ${prompt.toLowerCase()} in your industry?`,
-    `What would you add to this framework?`,
-    `Which strategy has worked best for you?`,
-    `What misconceptions about ${prompt.toLowerCase()} have you encountered?`
+    `Which of these strategies resonates most with your experience?`,
+    `What would you add to this approach?`,
+    `How do you stay consistent when progress feels slow?`,
+    `What's one lesson you've learned about ${prompt.toLowerCase()} that surprised you?`
   ];
 
-  const hashtags = ['#ProfessionalDevelopment', '#Leadership', '#CareerGrowth', '#BusinessStrategy', '#LinkedIn2025'];
+  const hashtags = ['#ProfessionalGrowth', '#CareerAdvice', '#Leadership', '#Productivity', '#Success'];
 
   const hook = hooks[Math.floor(Math.random() * hooks.length)];
+  const story = stories[Math.floor(Math.random() * stories.length)];
   const insight = insights[Math.floor(Math.random() * insights.length)];
-  const framework = frameworks[Math.floor(Math.random() * frameworks.length)];
   const question = questions[Math.floor(Math.random() * questions.length)];
 
   return `${hook}
 
+${story}
+
 ${insight}
 
-${framework}
+The bottom line: ${prompt} isn't about having all the answers.
 
-1️⃣ ${actionItems[0]}
-2️⃣ ${actionItems[1]} 
-3️⃣ ${actionItems[2]}
-
-The key insight: Success with ${prompt.toLowerCase()} isn't about having all the answers—it's about asking the right questions and taking consistent action.
-
-Remember: Progress beats perfection, every single time.
+It's about asking better questions and taking consistent action.
 
 ${question}
 

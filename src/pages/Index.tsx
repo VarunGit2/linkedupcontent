@@ -76,7 +76,7 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [toast]);
 
-  // Handle LinkedIn OAuth callback with improved error handling
+  // Handle LinkedIn OAuth callback
   useEffect(() => {
     const handleLinkedInCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -85,16 +85,14 @@ const Index = () => {
       const error = urlParams.get('error');
       const errorDescription = urlParams.get('error_description');
       
-      // Handle OAuth errors
       if (error) {
         console.error('LinkedIn OAuth error:', error, errorDescription);
         toast({
           title: "LinkedIn Connection Failed",
-          description: errorDescription || "Please check your LinkedIn app configuration and try again.",
+          description: errorDescription || "OAuth error occurred",
           variant: "destructive",
         });
         
-        // Clean up URL
         const url = new URL(window.location.href);
         url.search = '';
         window.history.replaceState({}, document.title, url.toString());
@@ -106,10 +104,9 @@ const Index = () => {
 
       if (code && state && state === storedState) {
         try {
-          // Use stored redirect URI or fallback to current URL
-          const redirectUri = storedRedirectUri || `${window.location.protocol}//${window.location.host}${window.location.pathname}`.replace(/\/$/, '');
+          const redirectUri = storedRedirectUri || window.location.origin;
           
-          console.log('Exchanging LinkedIn code with redirect URI:', redirectUri);
+          console.log('Processing LinkedIn callback with redirect:', redirectUri);
           
           const { data, error } = await supabase.functions.invoke('linkedin-auth', {
             body: {
@@ -120,8 +117,7 @@ const Index = () => {
           });
 
           if (error) {
-            console.error('Supabase function error:', error);
-            throw error;
+            throw new Error(error.message);
           }
 
           if (data?.success) {
@@ -132,34 +128,31 @@ const Index = () => {
             localStorage.removeItem('linkedin-oauth-state');
             localStorage.removeItem('linkedin-redirect-uri');
 
-            // Clean up URL
             const url = new URL(window.location.href);
             url.search = '';
             window.history.replaceState({}, document.title, url.toString());
 
             toast({
-              title: "🎉 LinkedIn Connected Successfully!",
-              description: `Welcome ${data.profile.name}! You can now schedule and publish posts to LinkedIn.`,
+              title: "🎉 LinkedIn Connected!",
+              description: `Welcome ${data.profile.name}! You can now publish posts to LinkedIn.`,
             });
 
-            // Navigate to schedule posts
             setCurrentPage('schedule-posts');
           } else {
             throw new Error(data?.error || 'LinkedIn authentication failed');
           }
         } catch (error) {
-          console.error('LinkedIn OAuth error:', error);
+          console.error('LinkedIn callback error:', error);
           localStorage.removeItem('linkedin-oauth-state');
           localStorage.removeItem('linkedin-redirect-uri');
           
-          // Clean up URL
           const url = new URL(window.location.href);
           url.search = '';
           window.history.replaceState({}, document.title, url.toString());
 
           toast({
             title: "LinkedIn Connection Failed",
-            description: "Please check your LinkedIn app configuration in Supabase secrets and ensure the redirect URI matches your app settings.",
+            description: "Please check your LinkedIn configuration and try again.",
             variant: "destructive",
           });
         }
