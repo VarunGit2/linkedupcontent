@@ -1,15 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Loader2, Linkedin, Unlink, AlertTriangle, Bot, Sparkles } from 'lucide-react';
+import { CheckCircle, Loader2, Linkedin, Unlink, AlertTriangle, Bot, Sparkles, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface ProfileSettingsProps {
-  user: User | null;
+  user: SupabaseUser | null;
   onBack: () => void;
 }
 
@@ -54,25 +55,8 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
 
   const handleProfileUpdate = async () => {
     try {
-      const updates = {
-        ...user?.user_metadata,
-        name: profileName,
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: profileName,
-          updated_at: new Date(),
-        })
-        .eq('id', user?.id);
-
-      if (error) {
-        throw error;
-      }
-
       const { error: userError } = await supabase.auth.updateUser({
-        data: updates,
+        data: { name: profileName },
       });
 
       if (userError) {
@@ -96,18 +80,39 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
   const handleLinkedInConnect = async () => {
     setIsConnecting(true);
     localStorage.removeItem('linkedin-oauth-state');
+    
     try {
+      // Use the current URL without any query parameters as redirect URI
+      const baseUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+      const redirectUri = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      
+      console.log('Using redirect URI:', redirectUri);
+      
       const { data, error } = await supabase.functions.invoke('linkedin-auth', {
         body: {
           action: 'getAuthUrl',
-          redirectUri: window.location.origin + window.location.pathname
+          redirectUri: redirectUri
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (data?.needsConfig) {
+        toast({
+          title: "LinkedIn Setup Required",
+          description: "Please configure LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in Supabase secrets first.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (data?.authUrl && data?.state) {
         localStorage.setItem('linkedin-oauth-state', data.state);
+        localStorage.setItem('linkedin-redirect-uri', redirectUri);
+        console.log('Redirecting to:', data.authUrl);
         window.location.href = data.authUrl;
       } else {
         throw new Error('Failed to retrieve LinkedIn authentication URL.');
@@ -116,7 +121,7 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
       console.error('LinkedIn connection error:', error);
       toast({
         title: "Connection Error",
-        description: error.message,
+        description: error.message || "Failed to connect to LinkedIn. Please check your configuration.",
         variant: "destructive",
       });
     } finally {
@@ -129,36 +134,14 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
     localStorage.removeItem('linkedin-profile');
     localStorage.removeItem('linkedin-access-token');
     localStorage.removeItem('linkedin-user-id');
+    localStorage.removeItem('linkedin-oauth-state');
+    localStorage.removeItem('linkedin-redirect-uri');
     setIsLinkedInConnected(false);
     setLinkedInProfile(null);
     toast({
       title: "LinkedIn Disconnected",
       description: "Your LinkedIn account has been disconnected.",
     });
-  };
-
-  const handleEmailUpdate = async () => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        email: profileEmail,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Email Updated! ✉️",
-        description: "Please check your new email to verify the change.",
-      });
-    } catch (error: any) {
-      console.error("Error updating email:", error.message);
-      toast({
-        title: "Email Update Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
   };
 
   return (
@@ -259,12 +242,15 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
                         LinkedIn Setup Required
                       </p>
                       <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                        To connect LinkedIn, you need to configure your LinkedIn app credentials in Supabase secrets:
+                        To connect LinkedIn, configure these in Supabase Edge Function Secrets:
                       </p>
                       <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1 ml-4">
                         <li>• LINKEDIN_CLIENT_ID</li>
                         <li>• LINKEDIN_CLIENT_SECRET</li>
                       </ul>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                        Make sure your LinkedIn app redirect URI is set to: {window.location.origin}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -311,7 +297,7 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
                     Premium AI Integration
                   </p>
                   <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-                    Add these API keys in Supabase secrets for the best content generation:
+                    Add these API keys in Supabase Edge Function Secrets for high-quality content:
                   </p>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
@@ -335,8 +321,8 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
             </div>
             
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p className="mb-2">💡 <strong>Pro Tip:</strong> Groq API is often the fastest and produces excellent creative content for LinkedIn posts.</p>
-              <p>Without API keys, the system uses enhanced fallback templates which still produce good results.</p>
+              <p className="mb-2">💡 <strong>Pro Tip:</strong> Groq API provides the best balance of speed and quality for LinkedIn content.</p>
+              <p>Without API keys, the system uses basic fallback templates.</p>
             </div>
           </CardContent>
         </Card>

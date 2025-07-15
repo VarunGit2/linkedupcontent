@@ -102,19 +102,20 @@ const Index = () => {
       }
 
       const storedState = localStorage.getItem('linkedin-oauth-state');
+      const storedRedirectUri = localStorage.getItem('linkedin-redirect-uri');
 
       if (code && state && state === storedState) {
         try {
-          // Use the exact current URL as redirect URI (no trailing slash)
-          const currentUrl = window.location.origin + window.location.pathname.replace(/\/$/, '');
+          // Use stored redirect URI or fallback to current URL
+          const redirectUri = storedRedirectUri || `${window.location.protocol}//${window.location.host}${window.location.pathname}`.replace(/\/$/, '');
           
-          console.log('Exchanging LinkedIn code with redirect URI:', currentUrl);
+          console.log('Exchanging LinkedIn code with redirect URI:', redirectUri);
           
           const { data, error } = await supabase.functions.invoke('linkedin-auth', {
             body: {
               action: 'exchangeCode',
               code: code,
-              redirectUri: currentUrl
+              redirectUri: redirectUri
             }
           });
 
@@ -129,6 +130,7 @@ const Index = () => {
             localStorage.setItem('linkedin-profile', JSON.stringify(data.profile));
             localStorage.setItem('linkedin-user-id', data.profile.sub);
             localStorage.removeItem('linkedin-oauth-state');
+            localStorage.removeItem('linkedin-redirect-uri');
 
             // Clean up URL
             const url = new URL(window.location.href);
@@ -148,6 +150,7 @@ const Index = () => {
         } catch (error) {
           console.error('LinkedIn OAuth error:', error);
           localStorage.removeItem('linkedin-oauth-state');
+          localStorage.removeItem('linkedin-redirect-uri');
           
           // Clean up URL
           const url = new URL(window.location.href);
@@ -156,7 +159,7 @@ const Index = () => {
 
           toast({
             title: "LinkedIn Connection Failed",
-            description: "Please check your LinkedIn app configuration in Supabase secrets and try again.",
+            description: "Please check your LinkedIn app configuration in Supabase secrets and ensure the redirect URI matches your app settings.",
             variant: "destructive",
           });
         }

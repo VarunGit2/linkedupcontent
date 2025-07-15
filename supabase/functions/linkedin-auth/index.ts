@@ -24,7 +24,7 @@ serve(async (req) => {
       if (!clientId) {
         console.error('LinkedIn Client ID not configured');
         return new Response(JSON.stringify({ 
-          error: 'LinkedIn integration not configured. Please add LINKEDIN_CLIENT_ID in Supabase secrets.',
+          error: 'LinkedIn integration not configured. Please add LINKEDIN_CLIENT_ID in Supabase Edge Function Secrets.',
           needsConfig: true 
         }), {
           status: 400,
@@ -32,21 +32,21 @@ serve(async (req) => {
         });
       }
       
-      // Use the exact redirect URI from the request
-      const finalRedirectUri = redirectUri;
+      // Clean the redirect URI - remove any trailing slashes and query parameters
+      const cleanRedirectUri = redirectUri.split('?')[0].replace(/\/$/, '');
       
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
       
-      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
+      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(cleanRedirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
       
       console.log('Generated LinkedIn auth URL:', authUrl);
-      console.log('Redirect URI:', finalRedirectUri);
+      console.log('Clean redirect URI:', cleanRedirectUri);
       
       return new Response(JSON.stringify({ 
         authUrl, 
         state,
-        redirectUri: finalRedirectUri,
+        redirectUri: cleanRedirectUri,
         success: true 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -57,7 +57,7 @@ serve(async (req) => {
       if (!clientId || !clientSecret) {
         console.error('LinkedIn credentials not fully configured');
         return new Response(JSON.stringify({ 
-          error: 'LinkedIn integration not fully configured. Please add both LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in Supabase secrets.',
+          error: 'LinkedIn integration not fully configured. Please add both LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in Supabase Edge Function Secrets.',
           needsConfig: true 
         }), {
           status: 400,
@@ -75,8 +75,11 @@ serve(async (req) => {
         });
       }
 
+      // Clean the redirect URI the same way
+      const cleanRedirectUri = redirectUri.split('?')[0].replace(/\/$/, '');
+      
       console.log('Exchanging authorization code for access token...');
-      console.log('Using redirect URI:', redirectUri);
+      console.log('Using clean redirect URI:', cleanRedirectUri);
 
       // Step 1: Exchange code for access token
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -90,7 +93,7 @@ serve(async (req) => {
           code: code,
           client_id: clientId,
           client_secret: clientSecret,
-          redirect_uri: redirectUri,
+          redirect_uri: cleanRedirectUri,
         }),
       });
 
@@ -98,7 +101,7 @@ serve(async (req) => {
         const errorText = await tokenResponse.text();
         console.error('Token exchange failed:', tokenResponse.status, errorText);
         return new Response(JSON.stringify({ 
-          error: `LinkedIn authentication failed: ${errorText}. Please check your LinkedIn app configuration.`,
+          error: `LinkedIn authentication failed: ${errorText}. Check your LinkedIn app redirect URI configuration.`,
           success: false 
         }), {
           status: 400,
