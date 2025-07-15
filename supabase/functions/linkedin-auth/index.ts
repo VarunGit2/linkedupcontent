@@ -32,8 +32,8 @@ serve(async (req) => {
         });
       }
       
-      // Clean the redirect URI - remove any trailing slashes and query parameters
-      const cleanRedirectUri = redirectUri.split('?')[0].replace(/\/$/, '');
+      // Use the exact redirect URI from the request
+      const cleanRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app';
       
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
@@ -41,7 +41,7 @@ serve(async (req) => {
       const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(cleanRedirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
       
       console.log('Generated LinkedIn auth URL:', authUrl);
-      console.log('Clean redirect URI:', cleanRedirectUri);
+      console.log('Using redirect URI:', cleanRedirectUri);
       
       return new Response(JSON.stringify({ 
         authUrl, 
@@ -75,11 +75,11 @@ serve(async (req) => {
         });
       }
 
-      // Clean the redirect URI the same way
-      const cleanRedirectUri = redirectUri.split('?')[0].replace(/\/$/, '');
+      // Use the exact same redirect URI
+      const cleanRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app';
       
       console.log('Exchanging authorization code for access token...');
-      console.log('Using clean redirect URI:', cleanRedirectUri);
+      console.log('Using redirect URI:', cleanRedirectUri);
 
       // Step 1: Exchange code for access token
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -101,7 +101,7 @@ serve(async (req) => {
         const errorText = await tokenResponse.text();
         console.error('Token exchange failed:', tokenResponse.status, errorText);
         return new Response(JSON.stringify({ 
-          error: `LinkedIn authentication failed: ${errorText}. Check your LinkedIn app redirect URI configuration.`,
+          error: `LinkedIn authentication failed: ${errorText}. Redirect URI must match exactly in LinkedIn app settings.`,
           success: false 
         }), {
           status: 400,
