@@ -23,7 +23,7 @@ serve(async (req) => {
       if (!clientId) {
         console.error('LinkedIn Client ID not configured');
         return new Response(JSON.stringify({ 
-          error: 'LinkedIn Client ID not configured in Supabase secrets',
+          error: 'LinkedIn integration not configured. Please contact support.',
           needsConfig: true 
         }), {
           status: 400,
@@ -31,18 +31,19 @@ serve(async (req) => {
         });
       }
       
-      const cleanRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app';
+      // Use the current domain for redirect
+      const currentDomain = new URL(redirectUri || 'https://preview--linkedupcontent.lovable.app').origin;
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
       
-      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(cleanRedirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
+      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(currentDomain)}&state=${state}&scope=${encodeURIComponent(scope)}`;
       
-      console.log('Generated auth URL with redirect:', cleanRedirectUri);
+      console.log('Generated auth URL with redirect:', currentDomain);
       
       return new Response(JSON.stringify({ 
         authUrl, 
         state,
-        redirectUri: cleanRedirectUri,
+        redirectUri: currentDomain,
         success: true 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -52,7 +53,7 @@ serve(async (req) => {
     if (action === 'exchangeCode') {
       if (!clientId || !clientSecret) {
         return new Response(JSON.stringify({ 
-          error: 'LinkedIn credentials not configured in Supabase secrets',
+          error: 'LinkedIn integration not configured. Please contact support.',
           needsConfig: true 
         }), {
           status: 400,
@@ -70,9 +71,9 @@ serve(async (req) => {
         });
       }
 
-      const cleanRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app';
+      const currentDomain = new URL(redirectUri || 'https://preview--linkedupcontent.lovable.app').origin;
       
-      console.log('Exchanging code with redirect URI:', cleanRedirectUri);
+      console.log('Exchanging code with redirect URI:', currentDomain);
 
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
@@ -85,7 +86,7 @@ serve(async (req) => {
           code: code,
           client_id: clientId,
           client_secret: clientSecret,
-          redirect_uri: cleanRedirectUri,
+          redirect_uri: currentDomain,
         }),
       });
 
@@ -93,7 +94,7 @@ serve(async (req) => {
         const errorText = await tokenResponse.text();
         console.error('Token exchange failed:', errorText);
         return new Response(JSON.stringify({ 
-          error: `LinkedIn token exchange failed: ${errorText}`,
+          error: `LinkedIn connection failed. Please try again or contact support.`,
           success: false 
         }), {
           status: 400,
@@ -115,7 +116,7 @@ serve(async (req) => {
         const errorText = await profileResponse.text();
         console.error('Profile fetch failed:', errorText);
         return new Response(JSON.stringify({ 
-          error: `Failed to fetch LinkedIn profile: ${errorText}`,
+          error: `Failed to fetch LinkedIn profile. Please try again.`,
           success: false 
         }), {
           status: 400,
@@ -151,7 +152,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('LinkedIn auth error:', error);
     return new Response(JSON.stringify({ 
-      error: `Authentication error: ${error.message}`,
+      error: `Authentication error. Please try again or contact support.`,
       success: false 
     }), {
       status: 500,

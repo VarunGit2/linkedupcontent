@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Loader2, Linkedin, Unlink, AlertTriangle, Bot, Sparkles, User, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Loader2, Linkedin, Unlink, AlertTriangle, User, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -98,7 +99,7 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
       if (data?.needsConfig) {
         toast({
           title: "LinkedIn Setup Required",
-          description: "Please configure LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in Supabase Edge Function Secrets.",
+          description: "LinkedIn integration is not configured. Please contact support.",
           variant: "destructive",
         });
         return;
@@ -237,16 +238,9 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-amber-900 mb-2">Setup Required</p>
-                      <p className="text-sm text-amber-700 mb-3">
-                        Configure in Supabase Edge Function Secrets:
-                      </p>
-                      <ul className="text-sm text-amber-700 space-y-1 ml-4">
-                        <li>• LINKEDIN_CLIENT_ID</li>
-                        <li>• LINKEDIN_CLIENT_SECRET</li>
-                      </ul>
-                      <p className="text-xs text-amber-600 mt-2">
-                        Set redirect URI to: {window.location.origin}
+                      <p className="font-medium text-amber-900 mb-2">LinkedIn Integration</p>
+                      <p className="text-sm text-amber-700">
+                        Connect your LinkedIn account to start publishing professional content directly to your network.
                       </p>
                     </div>
                   </div>
@@ -271,48 +265,6 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* AI Configuration */}
-        <Card className="lg:col-span-2 border-l-4 border-l-purple-500 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-purple-600" />
-              AI Content Generation
-            </CardTitle>
-            <CardDescription>
-              Add API keys for better content quality
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-start gap-3">
-                <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div>
-                  <p className="font-medium text-blue-900 mb-2">Premium AI Keys</p>
-                  <p className="text-sm text-blue-700 mb-3">
-                    Add these in Supabase Edge Function Secrets:
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="font-medium">GROQ_API_KEY</span>
-                      </div>
-                      <p className="text-gray-600 text-xs ml-4">Best quality & speed</p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="font-medium">OPENAI_API_KEY</span>
-                      </div>
-                      <p className="text-gray-600 text-xs ml-4">GPT-4 backup option</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
