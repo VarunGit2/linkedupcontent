@@ -5,14 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Lightbulb, Target, Briefcase, Sparkles, TrendingUp } from 'lucide-react';
+import { Loader2, Lightbulb, Target, Briefcase, Sparkles, TrendingUp, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const GenerateIdeas: React.FC = () => {
   const [industry, setIndustry] = useState('');
   const [interests, setInterests] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
+  const [ideaCount, setIdeaCount] = useState('6');
   const [ideas, setIdeas] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -30,14 +32,18 @@ const GenerateIdeas: React.FC = () => {
     setIsGenerating(true);
     
     try {
-      const promptContext = `Generate 8 professional LinkedIn post ideas for someone in the ${industry} industry.${interests ? ` Their interests include: ${interests}.` : ''}${targetAudience ? ` Their target audience is: ${targetAudience}.` : ''} Each idea should be engaging, thought-provoking, and designed to spark conversations.`;
+      const promptContext = `Generate ${ideaCount} professional LinkedIn post ideas for someone in the ${industry} industry.${interests ? ` Their interests include: ${interests}.` : ''}${targetAudience ? ` Their target audience is: ${targetAudience}.` : ''} Each idea should be engaging, thought-provoking, and designed to spark conversations. Make them unique and actionable.`;
 
       console.log('Sending prompt:', promptContext);
 
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: {
           prompt: promptContext,
-          type: 'ideas'
+          type: 'ideas',
+          ideaCount: parseInt(ideaCount),
+          industry,
+          audience: targetAudience,
+          interests
         }
       });
 
@@ -160,6 +166,25 @@ const GenerateIdeas: React.FC = () => {
               />
             </div>
 
+            <div>
+              <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                <Hash className="h-4 w-4" />
+                Number of Ideas
+              </Label>
+              <Select value={ideaCount} onValueChange={setIdeaCount}>
+                <SelectTrigger className="border-2 focus:border-green-500">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 Ideas</SelectItem>
+                  <SelectItem value="5">5 Ideas</SelectItem>
+                  <SelectItem value="6">6 Ideas</SelectItem>
+                  <SelectItem value="8">8 Ideas</SelectItem>
+                  <SelectItem value="10">10 Ideas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <Button 
               onClick={generateIdeas} 
               disabled={isGenerating || !industry.trim()}
@@ -168,12 +193,12 @@ const GenerateIdeas: React.FC = () => {
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Generating Premium Ideas...
+                  Generating {ideaCount} Premium Ideas...
                 </>
               ) : (
                 <>
                   <Lightbulb className="mr-2 h-5 w-5" />
-                  Generate Professional Ideas
+                  Generate {ideaCount} Professional Ideas
                 </>
               )}
             </Button>

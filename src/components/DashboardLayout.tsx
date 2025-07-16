@@ -26,7 +26,8 @@ import {
   User,
   Settings,
   LogOut,
-  BarChart3
+  BarChart3,
+  Menu
 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ModeToggle } from "@/components/ModeToggle"
@@ -46,9 +47,13 @@ const NavItem: React.FC<NavItemProps> = ({ id, label, icon: Icon, onClick, activ
       <Button
         variant={active ? "secondary" : "ghost"}
         onClick={() => onClick(id)}
-        className="justify-start w-full hover:bg-secondary/50 dark:hover:bg-secondary/50 rounded-md font-normal"
+        className={`justify-start w-full font-normal transition-all duration-200 ${
+          active 
+            ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-400" 
+            : "hover:bg-gray-100 hover:text-gray-900 hover:translate-x-1 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+        }`}
       >
-        <Icon className="mr-2 h-4 w-4" />
+        <Icon className="mr-3 h-4 w-4" />
         <span>{label}</span>
       </Button>
     </li>
@@ -91,20 +96,27 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
+  const getPageTitle = (page: string) => {
+    const item = navigationItems.find(item => item.id === page);
+    return item ? item.label : 'Dashboard';
+  };
+
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
       {/* Mobile Menu */}
       <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" className="md:hidden absolute top-4 left-4 z-50">
-            Menu
+          <Button variant="ghost" className="md:hidden fixed top-4 left-4 z-50 bg-white/80 backdrop-blur-sm border shadow-lg">
+            <Menu className="h-4 w-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64">
+        <SheetContent side="left" className="w-72 bg-white/95 backdrop-blur-sm">
           <SheetHeader className="text-left">
-            <SheetTitle>LinkedUp</SheetTitle>
+            <SheetTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              LinkedUp
+            </SheetTitle>
             <SheetDescription>
-              Manage your content and profile settings.
+              Professional LinkedIn content management
             </SheetDescription>
           </SheetHeader>
           <Separator className="my-4" />
@@ -123,7 +135,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </ul>
           </ScrollArea>
           <Separator className="my-4" />
-          <Button variant="outline" className="w-full justify-start" onClick={onLogout}>
+          <Button variant="outline" className="w-full justify-start hover:bg-red-50 hover:text-red-600 hover:border-red-200" onClick={onLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
           </Button>
@@ -131,9 +143,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </Sheet>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 border-r bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-        <div className="flex items-center justify-center h-16 border-b dark:border-gray-700">
-          <div className="text-lg font-semibold">LinkedUp</div>
+      <aside className="hidden md:flex flex-col w-72 bg-white/95 backdrop-blur-sm border-r border-gray-200 shadow-xl dark:bg-gray-900/95 dark:border-gray-700">
+        <div className="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+          <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            LinkedUp
+          </div>
         </div>
         <ScrollArea className="flex-1 p-4">
           <ul className="flex flex-col space-y-2 list-none">
@@ -149,8 +163,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             ))}
           </ul>
         </ScrollArea>
-        <div className="p-4 border-t dark:border-gray-700">
-          <Button variant="outline" className="w-full justify-start" onClick={onLogout}>
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <Button variant="outline" className="w-full justify-start hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors" onClick={onLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
           </Button>
@@ -159,34 +173,43 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex items-center justify-between h-16 px-4 border-b dark:border-gray-700">
+        <header className="flex items-center justify-between h-16 px-6 bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-gray-900/80 dark:border-gray-700">
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold">{currentPage}</h1>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200 capitalize">
+              {getPageTitle(currentPage)}
+            </h1>
           </div>
           <div className="flex items-center space-x-4">
             <ModeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
+                <Button variant="ghost" className="h-10 w-10 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
-                    <AvatarFallback>{user.initials}</AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                      {user.initials}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavigation('profile')}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavigation('settings')}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onLogout}>
+                <DropdownMenuItem onClick={onLogout} className="text-red-600 focus:text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>

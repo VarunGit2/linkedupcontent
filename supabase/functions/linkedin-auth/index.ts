@@ -31,15 +31,16 @@ serve(async (req) => {
         });
       }
       
-      // Use the current domain as redirect URI
       const currentDomain = new URL(redirectUri || 'https://preview--linkedupcontent.lovable.app/').origin;
       const finalRedirectUri = `${currentDomain}/`;
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
       
-      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
+      // Fixed: Properly include client_id in the auth URL
+      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(scope)}`;
       
-      console.log('Generated LinkedIn auth URL with client_id:', clientId);
+      console.log('Generated LinkedIn auth URL:', authUrl);
+      console.log('Using client_id:', clientId);
       console.log('Using redirect URI:', finalRedirectUri);
       
       return new Response(JSON.stringify({ 
@@ -84,7 +85,6 @@ serve(async (req) => {
         codeLength: code.length 
       });
 
-      // Exchange authorization code for access token
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
         headers: {
@@ -127,7 +127,6 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
       console.log('LinkedIn access token obtained successfully');
       
-      // Fetch user profile information
       const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,

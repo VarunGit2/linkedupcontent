@@ -21,7 +21,8 @@ serve(async (req) => {
       contentFocus = 'general',
       industry = '',
       audience = '',
-      interests = ''
+      interests = '',
+      ideaCount = 6  // Allow customizable idea count
     } = await req.json();
     
     if (!prompt?.trim()) {
@@ -39,7 +40,9 @@ serve(async (req) => {
       contentLength,
       contentFocus,
       industry,
-      audience
+      audience,
+      type,
+      ideaCount
     });
 
     // Try Groq first with enhanced prompting
@@ -49,7 +52,7 @@ serve(async (req) => {
         console.log('Using Groq Llama 3.3 70B for premium content generation...');
         
         const systemPrompt = getSystemPrompt(type, writingTone, contentLength, contentFocus);
-        const userPrompt = buildUserPrompt(prompt, type, writingTone, contentLength, contentFocus, industry, audience, interests);
+        const userPrompt = buildUserPrompt(prompt, type, writingTone, contentLength, contentFocus, industry, audience, interests, ideaCount);
 
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -63,7 +66,7 @@ serve(async (req) => {
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
             ],
-            max_tokens: getMaxTokens(contentLength),
+            max_tokens: getMaxTokens(contentLength, type),
             temperature: getTempByTone(writingTone),
             top_p: 0.9,
             frequency_penalty: 0.5,
@@ -80,7 +83,7 @@ serve(async (req) => {
               content, 
               source: 'groq_llama_70b',
               quality: 'premium',
-              parameters: { writingTone, contentLength, contentFocus }
+              parameters: { writingTone, contentLength, contentFocus, ideaCount }
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -98,7 +101,7 @@ serve(async (req) => {
         console.log('Using OpenAI GPT-4.1 as backup...');
         
         const systemPrompt = getSystemPrompt(type, writingTone, contentLength, contentFocus);
-        const userPrompt = buildUserPrompt(prompt, type, writingTone, contentLength, contentFocus, industry, audience, interests);
+        const userPrompt = buildUserPrompt(prompt, type, writingTone, contentLength, contentFocus, industry, audience, interests, ideaCount);
 
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -112,7 +115,7 @@ serve(async (req) => {
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
             ],
-            max_tokens: getMaxTokens(contentLength),
+            max_tokens: getMaxTokens(contentLength, type),
             temperature: getTempByTone(writingTone),
           }),
         });
@@ -126,7 +129,7 @@ serve(async (req) => {
               content, 
               source: 'openai_gpt4.1',
               quality: 'good',
-              parameters: { writingTone, contentLength, contentFocus }
+              parameters: { writingTone, contentLength, contentFocus, ideaCount }
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -139,13 +142,13 @@ serve(async (req) => {
 
     // Enhanced fallback with parameter consideration
     console.log('Using parameter-aware template system');
-    const content = generateParameterAwareContent(prompt, type, writingTone, contentLength, contentFocus, industry, audience);
+    const content = generateParameterAwareContent(prompt, type, writingTone, contentLength, contentFocus, industry, audience, ideaCount);
     
     return new Response(JSON.stringify({ 
       content, 
       source: 'enhanced_template',
       quality: 'good',
-      parameters: { writingTone, contentLength, contentFocus }
+      parameters: { writingTone, contentLength, contentFocus, ideaCount }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -163,28 +166,28 @@ serve(async (req) => {
 });
 
 function getSystemPrompt(type: string, tone: string, length: string, focus: string): string {
-  const basePrompt = `You are an elite LinkedIn content strategist and viral copywriter. You create content that stops the scroll and drives massive engagement.`;
+  const basePrompt = `You are an elite LinkedIn content strategist and viral copywriter specializing in creating scroll-stopping, engagement-driving content.`;
   
   const toneInstructions = {
-    professional: "Use professional, authoritative language while remaining approachable. Focus on expertise and credibility.",
-    casual: "Write in a conversational, friendly tone. Use everyday language and personal anecdotes.",
-    inspirational: "Create uplifting, motivational content that inspires action. Use emotional storytelling.",
-    educational: "Focus on teaching and providing value. Use clear explanations and actionable insights.",
-    humorous: "Add appropriate humor and wit while maintaining professionalism. Use clever observations."
+    professional: "Write with authority and credibility. Use industry terminology appropriately while remaining accessible.",
+    casual: "Use conversational, friendly language. Include personal touches and relatable examples.",
+    inspirational: "Create motivational content that inspires action. Use emotional storytelling and powerful metaphors.",
+    educational: "Focus on teaching valuable skills. Use clear explanations with actionable takeaways.",
+    humorous: "Add wit and clever observations while maintaining professionalism. Use light humor strategically."
   };
 
   const lengthInstructions = {
-    short: "Keep content concise - 1-2 paragraphs maximum. Get straight to the point.",
-    medium: "Create moderate length content - 3-4 paragraphs with good flow.",
-    long: "Develop comprehensive content - 5+ paragraphs with deep insights and examples."
+    short: "Keep content concise and punchy - 1-2 paragraphs maximum. Every word must count.",
+    medium: "Create well-structured content - 3-4 paragraphs with clear flow and compelling narrative.",
+    long: "Develop comprehensive, in-depth content - 5+ paragraphs with detailed insights and examples."
   };
 
   const focusInstructions = {
-    'thought-leadership': "Position as industry thought leader. Share unique perspectives and forward-thinking insights.",
-    'personal-story': "Focus on personal experiences and lessons learned. Make it relatable and authentic.",
-    'industry-insights': "Share professional knowledge and industry-specific expertise.",
-    'tips-advice': "Provide actionable advice and practical tips that readers can immediately apply.",
-    'general': "Create engaging professional content that appeals to a broad audience."
+    'thought-leadership': "Position as an industry visionary. Share unique perspectives and forward-thinking insights.",
+    'personal-story': "Focus on authentic personal experiences. Make it relatable and emotionally resonant.",
+    'industry-insights': "Share deep professional knowledge and industry-specific expertise with authority.",
+    'tips-advice': "Provide immediately actionable advice that readers can implement today.",
+    'general': "Create broadly appealing professional content that resonates across industries."
   };
 
   return `${basePrompt}
@@ -196,59 +199,77 @@ LENGTH: ${lengthInstructions[length] || lengthInstructions.medium}
 FOCUS: ${focusInstructions[focus] || focusInstructions.general}
 
 VIRAL CONTENT PRINCIPLES:
-- Start with a hook that stops the scroll (question, bold statement, personal story)
-- Use psychological triggers (curiosity, fear of missing out, social proof)
-- Include specific numbers and data points
-- Create emotional connection through storytelling
-- End with a clear call-to-action or discussion prompt
-- Use short paragraphs and bullet points for readability
-- Include relevant emojis strategically (but not too many)
+• Hook readers in the first 2 lines with curiosity, controversy, or compelling stats
+• Use psychological triggers: scarcity, social proof, fear of missing out
+• Include specific numbers, percentages, and concrete examples
+• Tell stories that create emotional connection
+• Use strategic line breaks for mobile readability
+• End with clear call-to-action that drives engagement
+• Include relevant emojis (2-3 maximum) for visual appeal
 
-LINKEDIN BEST PRACTICES:
-- First 2 lines are crucial - make them count
-- Use line breaks for easy mobile reading
-- Include industry-specific terminology when relevant
-- Ask engaging questions to drive comments
-- Share genuine insights from experience`;
+LINKEDIN ALGORITHM OPTIMIZATION:
+• Front-load the most engaging content in first 125 characters
+• Use industry-relevant keywords naturally
+• Structure for easy scanning with bullet points or numbered lists
+• Ask engaging questions to drive comments and shares
+• Create content that encourages saves and reshares`;
 }
 
-function buildUserPrompt(prompt: string, type: string, tone: string, length: string, focus: string, industry: string, audience: string, interests: string): string {
+function buildUserPrompt(prompt: string, type: string, tone: string, length: string, focus: string, industry: string, audience: string, interests: string, ideaCount: number): string {
   let userPrompt = '';
   
   if (type === 'ideas') {
-    userPrompt = `Generate exactly 8 highly engaging LinkedIn post ideas for: ${prompt}
+    userPrompt = `Generate exactly ${ideaCount} highly viral LinkedIn post ideas about: ${prompt}
+
+CONTEXT:
+• Industry: ${industry || 'general business'}
+• Target audience: ${audience || 'professionals'}  
+• Key interests: ${interests || 'professional development'}
+• Tone: ${tone}
+• Focus: ${focus}
 
 REQUIREMENTS:
-- Each idea should be 1-2 sentences
-- Make them scroll-stopping and engagement-driving
-- Include specific angles and unique perspectives
-- Target ${audience || 'professionals'} in ${industry || 'the industry'}
-- Consider interests: ${interests || 'general professional development'}
+• Each idea should be 1-2 compelling sentences
+• Make them scroll-stopping and engagement-driving
+• Include specific angles and unique perspectives
+• Ensure each idea is distinctly different
+• Target the specified audience and industry
+• Make them actionable and thought-provoking
 
-Return as numbered list (1-8).`;
+Format as a clean numbered list (1-${ideaCount}).`;
   } else {
     userPrompt = `Create a viral LinkedIn post about: ${prompt}
 
-SPECIFIC REQUIREMENTS:
-- Target audience: ${audience || 'professionals'}
-- Industry context: ${industry || 'general business'}
-- User interests: ${interests || 'professional development'}
-- Writing tone: ${tone}
-- Content length: ${length}
-- Content focus: ${focus}
+SPECIFICATIONS:
+• Target audience: ${audience || 'professionals'}
+• Industry context: ${industry || 'general business'}  
+• User interests: ${interests || 'professional development'}
+• Writing tone: ${tone}
+• Content length: ${length}
+• Content focus: ${focus}
 
-The post should be optimized for LinkedIn's algorithm and designed to drive maximum engagement.`;
+REQUIREMENTS:
+• Optimize for LinkedIn's algorithm and maximum engagement
+• Make it scroll-stopping and shareable
+• Include specific, actionable insights
+• Use the exact tone and length specified
+• Tailor content to the target audience and industry
+• End with an engaging question or call-to-action`;
   }
 
   return userPrompt;
 }
 
-function getMaxTokens(length: string): number {
+function getMaxTokens(length: string, type: string = 'content'): number {
+  if (type === 'ideas') {
+    return 800; // More tokens for multiple ideas
+  }
+  
   switch (length) {
-    case 'short': return 300;
-    case 'medium': return 600;
-    case 'long': return 1000;
-    default: return 600;
+    case 'short': return 400;
+    case 'medium': return 700;
+    case 'long': return 1200;
+    default: return 700;
   }
 }
 
@@ -258,30 +279,30 @@ function getTempByTone(tone: string): number {
     case 'casual': return 0.8;
     case 'inspirational': return 0.9;
     case 'educational': return 0.6;
-    case 'humorous': return 0.8;
+    case 'humorous': return 0.85;
     default: return 0.7;
   }
 }
 
-function generateParameterAwareContent(prompt: string, type: string, tone: string, length: string, focus: string, industry: string, audience: string): string {
+function generateParameterAwareContent(prompt: string, type: string, tone: string, length: string, focus: string, industry: string, audience: string, ideaCount: number): string {
   const hooks = {
     professional: [
-      "Here's what I've learned about",
-      "The truth about",
-      "Why most professionals struggle with",
-      "3 critical mistakes I see in"
+      "Industry analysis reveals",
+      "Data shows that",
+      "Research indicates", 
+      "Studies confirm"
     ],
     casual: [
-      "Let me tell you about",
-      "Here's something interesting:",
-      "I just realized something about",
-      "Want to know a secret about"
+      "Here's what I've learned",
+      "Let me share something interesting",
+      "I just discovered",
+      "Here's a reality check"
     ],
     inspirational: [
-      "Your breakthrough moment is closer than you think.",
-      "What if I told you that",
-      "The most successful people I know",
-      "Here's how you can transform"
+      "Your breakthrough is closer than you think",
+      "What if I told you",
+      "The most successful people know this secret",
+      "Transform your approach with this insight"
     ]
   };
 
@@ -289,25 +310,20 @@ function generateParameterAwareContent(prompt: string, type: string, tone: strin
   const hook = selectedHooks[Math.floor(Math.random() * selectedHooks.length)];
 
   if (type === 'ideas') {
-    return [
-      `1. ${hook} ${prompt} - and why it matters more than ever in 2025`,
-      `2. The ${prompt} mistake that's costing professionals their careers`,
-      `3. 5 ${prompt} trends that will dominate this year (prepare now)`,
-      `4. Why traditional ${prompt} advice is outdated (and what works instead)`,
-      `5. How I transformed my approach to ${prompt} and doubled my results`,
-      `6. The uncomfortable truth about ${prompt} that nobody talks about`,
-      `7. ${prompt}: What the top 1% do differently (and you can too)`,
-      `8. The future of ${prompt} - predictions that will surprise you`
-    ].join('\n');
+    const ideas = [];
+    for (let i = 1; i <= ideaCount; i++) {
+      ideas.push(`${i}. ${hook}: ${prompt} - and why ${audience || 'professionals'} in ${industry || 'your industry'} need to pay attention`);
+    }
+    return ideas.join('\n');
   }
 
-  // Generate full content based on length
+  // Generate full content based on parameters
   const paragraphs = [];
   paragraphs.push(`${hook} ${prompt}...`);
   
   if (length === 'medium' || length === 'long') {
-    paragraphs.push(`Here's what I've discovered after years in ${industry || 'the industry'}:`);
-    paragraphs.push(`→ The key insight that changed everything\n→ Why this matters for ${audience || 'professionals'}\n→ How you can apply this immediately`);
+    paragraphs.push(`Here's what ${audience || 'professionals'} in ${industry || 'the industry'} need to know:`);
+    paragraphs.push(`→ The critical insight that changes everything\n→ Why this matters for your career\n→ How to apply this immediately`);
   }
   
   if (length === 'long') {
