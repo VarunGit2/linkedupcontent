@@ -31,8 +31,8 @@ serve(async (req) => {
         });
       }
       
-      // Use the exact redirect URI that was passed or default to the preview URL
-      const finalRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app';
+      // Use the exact redirect URI from the request or fallback to preview URL
+      const finalRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app/';
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
       
@@ -73,7 +73,7 @@ serve(async (req) => {
         });
       }
 
-      const finalRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app';
+      const finalRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app/';
       
       console.log('Exchanging code with redirect URI:', finalRedirectUri);
       console.log('Using client ID:', clientId);
@@ -99,12 +99,19 @@ serve(async (req) => {
         console.error('LinkedIn token exchange failed:', {
           status: tokenResponse.status,
           statusText: tokenResponse.statusText,
-          error: errorText
+          error: errorText,
+          redirectUri: finalRedirectUri,
+          clientId: clientId
         });
         return new Response(JSON.stringify({ 
           error: `LinkedIn connection failed: ${tokenResponse.status} ${tokenResponse.statusText}`,
           success: false,
-          details: errorText
+          details: errorText,
+          debugInfo: {
+            redirectUri: finalRedirectUri,
+            clientId: clientId,
+            hasClientSecret: !!clientSecret
+          }
         }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
