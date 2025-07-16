@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Sheet,
@@ -30,12 +31,11 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ModeToggle } from "@/components/ModeToggle"
 import { useTheme } from 'next-themes'
-import { Link } from '@remix-run/react';
 
 interface NavItemProps {
   id: string;
   label: string;
-  icon: React.FC;
+  icon: React.ComponentType<{ className?: string }>;
   onClick: (id: string) => void;
   active: boolean;
 }
@@ -86,7 +86,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     { id: 'create-content', label: 'Create Content', icon: PenTool },
     { id: 'generate-ideas', label: 'Generate Ideas', icon: Lightbulb },
     { id: 'schedule-posts', label: 'Schedule Posts', icon: Calendar },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 }, // Add this line
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -133,7 +133,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
         <div className="flex items-center justify-center h-16 border-b dark:border-gray-700">
-          <Link to="/" className="text-lg font-semibold">LinkedUp</Link>
+          <div className="text-lg font-semibold">LinkedUp</div>
         </div>
         <ScrollArea className="flex-1 p-4">
           <ul className="flex flex-col space-y-2 list-none">
