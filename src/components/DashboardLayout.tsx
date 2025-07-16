@@ -1,23 +1,61 @@
-
 import React, { useState } from 'react';
 import {
-  Home,
-  LayoutDashboard,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  PenTool,
+  Lightbulb,
   Calendar,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
-  X,
-  BrainCircuit,
   User,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Footer from '@/components/Footer';
+  Settings,
+  LogOut,
+  BarChart3
+} from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { ModeToggle } from "@/components/ModeToggle"
+import { useTheme } from 'next-themes'
+import { Link } from '@remix-run/react';
+
+interface NavItemProps {
+  id: string;
+  label: string;
+  icon: React.FC;
+  onClick: (id: string) => void;
+  active: boolean;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ id, label, icon: Icon, onClick, active }) => {
+  return (
+    <li>
+      <Button
+        variant={active ? "secondary" : "ghost"}
+        onClick={() => onClick(id)}
+        className="justify-start w-full hover:bg-secondary/50 dark:hover:bg-secondary/50 rounded-md font-normal"
+      >
+        <Icon className="mr-2 h-4 w-4" />
+        <span>{label}</span>
+      </Button>
+    </li>
+  );
+};
 
 interface DashboardLayoutProps {
-  children: React.ReactNode;
   user: {
     email: string;
     name: string;
@@ -26,214 +64,143 @@ interface DashboardLayoutProps {
   onLogout: () => void;
   currentPage: string;
   onNavigate: (page: string) => void;
+  children: React.ReactNode;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
-  children,
   user,
   onLogout,
   currentPage,
-  onNavigate
+  onNavigate,
+  children
 }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { theme } = useTheme();
 
   const handleNavigation = (page: string) => {
     onNavigate(page);
-    closeMobileMenu();
+    setIsMenuOpen(false);
   };
 
+  const navigationItems = [
+    { id: 'create-content', label: 'Create Content', icon: PenTool },
+    { id: 'generate-ideas', label: 'Generate Ideas', icon: Lightbulb },
+    { id: 'schedule-posts', label: 'Schedule Posts', icon: Calendar },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 }, // Add this line
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Mobile Header */}
-      <header className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={toggleMobileMenu}>
-            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      {/* Mobile Menu */}
+      <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" className="md:hidden absolute top-4 left-4 z-50">
+            Menu
           </Button>
-          <div className="flex items-center space-x-3">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
-              <AvatarFallback>{user.initials}</AvatarFallback>
-            </Avatar>
-            <span className="font-semibold">{user.name}</span>
-          </div>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64">
+          <SheetHeader className="text-left">
+            <SheetTitle>LinkedUp</SheetTitle>
+            <SheetDescription>
+              Manage your content and profile settings.
+            </SheetDescription>
+          </SheetHeader>
+          <Separator className="my-4" />
+          <ScrollArea className="h-[calc(100vh-10rem)] pl-2">
+            <ul className="flex flex-col space-y-2 list-none">
+              {navigationItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  id={item.id}
+                  label={item.label}
+                  icon={item.icon}
+                  onClick={handleNavigation}
+                  active={currentPage === item.id}
+                />
+              ))}
+            </ul>
+          </ScrollArea>
+          <Separator className="my-4" />
+          <Button variant="outline" className="w-full justify-start" onClick={onLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </Button>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 border-r bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+        <div className="flex items-center justify-center h-16 border-b dark:border-gray-700">
+          <Link to="/" className="text-lg font-semibold">LinkedUp</Link>
         </div>
-      </header>
+        <ScrollArea className="flex-1 p-4">
+          <ul className="flex flex-col space-y-2 list-none">
+            {navigationItems.map((item) => (
+              <NavItem
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                icon={item.icon}
+                onClick={handleNavigation}
+                active={currentPage === item.id}
+              />
+            ))}
+          </ul>
+        </ScrollArea>
+        <div className="p-4 border-t dark:border-gray-700">
+          <Button variant="outline" className="w-full justify-start" onClick={onLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </Button>
+        </div>
+      </aside>
 
-      <div className="flex flex-1">
-        {/* Desktop Sidebar - Collapsible */}
-        <aside 
-          className={`hidden lg:flex lg:flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
-            isHovered ? 'w-64' : 'w-16'
-          }`}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          <div className="flex flex-col h-full p-4">
-            <div className="flex items-center space-x-2 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">LU</span>
-              </div>
-              {isHovered && (
-                <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  LinkedUp
-                </span>
-              )}
-            </div>
-
-            <nav className="flex-1 space-y-1">
-              <Button
-                variant="ghost"
-                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'create-content' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                onClick={() => handleNavigation('create-content')}
-                title={!isHovered ? 'Create Content' : ''}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                {isHovered && <span className="ml-2">Create Content</span>}
-              </Button>
-              <Button
-                variant="ghost"
-                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'generate-ideas' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                onClick={() => handleNavigation('generate-ideas')}
-                title={!isHovered ? 'Generate Ideas' : ''}
-              >
-                <BrainCircuit className="w-4 h-4" />
-                {isHovered && <span className="ml-2">Generate Ideas</span>}
-              </Button>
-              <Button
-                variant="ghost"
-                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'schedule-posts' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                onClick={() => handleNavigation('schedule-posts')}
-                title={!isHovered ? 'Schedule Posts' : ''}
-              >
-                <Calendar className="w-4 h-4" />
-                {isHovered && <span className="ml-2">Schedule Posts</span>}
-              </Button>
-              <Button
-                variant="ghost"
-                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'profile' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                onClick={() => handleNavigation('profile')}
-                title={!isHovered ? 'Profile' : ''}
-              >
-                <User className="w-4 h-4" />
-                {isHovered && <span className="ml-2">Profile</span>}
-              </Button>
-              <Button
-                variant="ghost"
-                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal ${currentPage === 'settings' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                onClick={() => handleNavigation('settings')}
-                title={!isHovered ? 'Settings' : ''}
-              >
-                <Settings className="w-4 h-4" />
-                {isHovered && <span className="ml-2">Settings</span>}
-              </Button>
-            </nav>
-
-            <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Button
-                variant="ghost"
-                className={`w-full ${isHovered ? 'justify-start' : 'justify-center px-2'} font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700`}
-                onClick={onLogout}
-                title={!isHovered ? 'Logout' : ''}
-              >
-                <LogOut className="w-4 h-4" />
-                {isHovered && <span className="ml-2">Logout</span>}
-              </Button>
-            </div>
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="flex items-center justify-between h-16 px-4 border-b dark:border-gray-700">
+          <div className="flex items-center">
+            <h1 className="text-lg font-semibold">{currentPage}</h1>
           </div>
-        </aside>
-
-        {/* Mobile Sidebar Overlay */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-40 flex">
-            <div className="relative w-full max-w-md bg-white dark:bg-gray-800 flex flex-col overflow-y-auto shadow-xl">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="w-8 h-8">
+          <div className="flex items-center space-x-4">
+            <ModeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
+                  <Avatar className="h-8 w-8">
                     <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
                     <AvatarFallback>{user.initials}</AvatarFallback>
                   </Avatar>
-                  <span className="font-semibold">{user.name}</span>
-                </div>
-                <Button variant="ghost" onClick={toggleMobileMenu}>
-                  <X className="w-5 h-5" />
                 </Button>
-              </div>
-
-              <nav className="p-4 space-y-1">
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start font-normal ${currentPage === 'create-content' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                  onClick={() => handleNavigation('create-content')}
-                >
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Create Content
-                </Button>
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start font-normal ${currentPage === 'generate-ideas' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                  onClick={() => handleNavigation('generate-ideas')}
-                >
-                  <BrainCircuit className="w-4 h-4 mr-2" />
-                  Generate Ideas
-                </Button>
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start font-normal ${currentPage === 'schedule-posts' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                  onClick={() => handleNavigation('schedule-posts')}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Schedule Posts
-                </Button>
-                 <Button
-                  variant="ghost"
-                  className={`w-full justify-start font-normal ${currentPage === 'profile' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                  onClick={() => handleNavigation('profile')}
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Profile
-                </Button>
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start font-normal ${currentPage === 'settings' ? 'bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                  onClick={() => handleNavigation('settings')}
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-              </nav>
-
-              <div className="p-4 mt-auto border-t border-gray-200 dark:border-gray-700">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start font-normal text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={onLogout}
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        )}
+        </header>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <div className="min-h-full">
+        <div className="flex-1 overflow-y-auto">
+          <div className="py-6">
             {children}
           </div>
-          <Footer onNavigate={onNavigate} />
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

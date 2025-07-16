@@ -16,6 +16,7 @@ import { Lightbulb } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import Analytics from '@/components/Analytics';
 
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -208,6 +209,8 @@ const Index = () => {
         return <GenerateIdeas />;
       case 'schedule-posts':
         return <SchedulePosts />;
+      case 'analytics':
+        return <Analytics />;
       case 'profile':
         return (
           <ProfileView 

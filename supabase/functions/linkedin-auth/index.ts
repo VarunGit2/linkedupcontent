@@ -23,7 +23,7 @@ serve(async (req) => {
       if (!clientId) {
         console.error('LinkedIn Client ID not configured');
         return new Response(JSON.stringify({ 
-          error: 'LinkedIn integration not configured. Please contact support.',
+          error: 'LinkedIn integration not configured. Please add LINKEDIN_CLIENT_ID to Supabase secrets.',
           needsConfig: true 
         }), {
           status: 400,
@@ -31,20 +31,22 @@ serve(async (req) => {
         });
       }
       
-      // Use the exact redirect URI from the request or fallback to preview URL
-      const finalRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app/';
+      // Use the current domain as redirect URI
+      const currentDomain = new URL(redirectUri || 'https://preview--linkedupcontent.lovable.app/').origin;
+      const finalRedirectUri = `${currentDomain}/`;
       const scope = 'openid profile email w_member_social';
       const state = crypto.randomUUID();
       
       const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
       
-      console.log('Generated LinkedIn auth URL:', authUrl);
+      console.log('Generated LinkedIn auth URL with client_id:', clientId);
       console.log('Using redirect URI:', finalRedirectUri);
       
       return new Response(JSON.stringify({ 
         authUrl, 
         state,
         redirectUri: finalRedirectUri,
+        clientId: clientId,
         success: true 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -53,9 +55,9 @@ serve(async (req) => {
 
     if (action === 'exchangeCode') {
       if (!clientId || !clientSecret) {
-        console.error('LinkedIn credentials not configured');
+        console.error('LinkedIn credentials not configured', { hasClientId: !!clientId, hasClientSecret: !!clientSecret });
         return new Response(JSON.stringify({ 
-          error: 'LinkedIn integration not configured. Please contact support.',
+          error: 'LinkedIn integration not configured. Please add LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET to Supabase secrets.',
           needsConfig: true 
         }), {
           status: 400,
@@ -73,10 +75,14 @@ serve(async (req) => {
         });
       }
 
-      const finalRedirectUri = redirectUri || 'https://preview--linkedupcontent.lovable.app/';
+      const currentDomain = new URL(redirectUri || 'https://preview--linkedupcontent.lovable.app/').origin;
+      const finalRedirectUri = `${currentDomain}/`;
       
-      console.log('Exchanging code with redirect URI:', finalRedirectUri);
-      console.log('Using client ID:', clientId);
+      console.log('Exchanging code with:', { 
+        redirectUri: finalRedirectUri, 
+        clientId: clientId,
+        codeLength: code.length 
+      });
 
       // Exchange authorization code for access token
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -104,7 +110,7 @@ serve(async (req) => {
           clientId: clientId
         });
         return new Response(JSON.stringify({ 
-          error: `LinkedIn connection failed: ${tokenResponse.status} ${tokenResponse.statusText}`,
+          error: `LinkedIn connection failed: ${tokenResponse.status} - ${errorText}`,
           success: false,
           details: errorText,
           debugInfo: {

@@ -13,7 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, type = 'ideas' } = await req.json();
+    const { 
+      prompt, 
+      type = 'content',
+      writingTone = 'professional',
+      contentLength = 'medium',
+      contentFocus = 'general',
+      industry = '',
+      audience = '',
+      interests = ''
+    } = await req.json();
     
     if (!prompt?.trim()) {
       return new Response(JSON.stringify({ 
@@ -24,53 +33,23 @@ serve(async (req) => {
       });
     }
 
-    console.log('Generating premium LinkedIn content for:', prompt);
+    console.log('Generating LinkedIn content with parameters:', {
+      prompt: prompt.substring(0, 50) + '...',
+      writingTone,
+      contentLength,
+      contentFocus,
+      industry,
+      audience
+    });
 
-    // Try Groq first (should be the best now with your new API key)
+    // Try Groq first with enhanced prompting
     const groqKey = Deno.env.get('GROQ_API_KEY');
     if (groqKey) {
       try {
-        console.log('Using Groq Llama for high-quality content generation...');
+        console.log('Using Groq Llama 3.3 70B for premium content generation...');
         
-        const systemPrompt = `You are an elite LinkedIn content strategist who creates viral, professional posts that get 10K+ views. You understand LinkedIn psychology and create content that stops the scroll.
-
-CRITICAL REQUIREMENTS:
-1. Generate EXACTLY 8 complete, professional LinkedIn post IDEAS (not full posts, just concise ideas)
-2. Each idea should be 1-2 sentences maximum
-3. Ideas must be specific, actionable, and engaging
-4. Focus on professional insights, industry trends, career advice, or thought leadership
-5. Make them conversation starters that encourage engagement
-
-CONTENT PSYCHOLOGY:
-- Use curiosity gaps ("The mistake 90% of developers make...")
-- Include specific numbers and statistics
-- Challenge conventional wisdom
-- Share contrarian viewpoints
-- Focus on transformation stories
-- Include industry-specific insights
-
-FORMAT: Return exactly 8 numbered ideas, each on a new line.
-
-EXAMPLE OUTPUT:
-1. The coding mistake that cost me $50K and how you can avoid it
-2. Why remote work is actually killing productivity (unpopular opinion)
-3. 5 AI tools that replaced my entire workflow in 2024
-4. The interview question that reveals if a developer will succeed
-5. Why your GitHub profile is more important than your resume
-6. The soft skill that separates senior developers from the rest
-7. How I went from junior dev to tech lead in 18 months
-8. The programming language everyone should learn in 2025`;
-
-        const userPrompt = `Generate 8 professional LinkedIn post ideas for: ${prompt}
-
-Requirements:
-- Each idea should be engaging and professional
-- Focus on industry insights, career advice, or thought leadership
-- Make them conversation starters
-- Include specific, actionable topics
-- Target professional audience on LinkedIn
-
-Industry context: ${prompt}`;
+        const systemPrompt = getSystemPrompt(type, writingTone, contentLength, contentFocus);
+        const userPrompt = buildUserPrompt(prompt, type, writingTone, contentLength, contentFocus, industry, audience, interests);
 
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -84,47 +63,42 @@ Industry context: ${prompt}`;
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
             ],
-            max_tokens: 1000,
-            temperature: 0.8,
+            max_tokens: getMaxTokens(contentLength),
+            temperature: getTempByTone(writingTone),
             top_p: 0.9,
+            frequency_penalty: 0.5,
+            presence_penalty: 0.3,
           }),
         });
 
         if (groqResponse.ok) {
           const data = await groqResponse.json();
           const content = data.choices[0]?.message?.content;
-          if (content && content.length > 100) {
-            console.log('High-quality content generated with Groq Llama');
+          if (content && content.length > 50) {
+            console.log('High-quality content generated with Groq Llama 70B');
             return new Response(JSON.stringify({ 
               content, 
               source: 'groq_llama_70b',
-              quality: 'premium'
+              quality: 'premium',
+              parameters: { writingTone, contentLength, contentFocus }
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
         }
       } catch (error) {
-        console.log('Groq failed, trying other options:', error.message);
+        console.log('Groq failed, trying OpenAI:', error.message);
       }
     }
 
-    // Try OpenAI GPT-4.1 as backup
+    // Try OpenAI as backup
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
     if (openaiKey) {
       try {
         console.log('Using OpenAI GPT-4.1 as backup...');
         
-        const systemPrompt = `You are a professional LinkedIn content strategist. Generate exactly 8 high-quality LinkedIn post ideas.
-
-REQUIREMENTS:
-- Each idea must be a complete, specific topic (1-2 sentences)
-- Professional and engaging
-- Industry-relevant and thought-provoking
-- Designed to spark conversations and engagement
-- Include specific angles or unique perspectives
-
-FORMAT: Return exactly 8 numbered ideas, each on a new line.`;
+        const systemPrompt = getSystemPrompt(type, writingTone, contentLength, contentFocus);
+        const userPrompt = buildUserPrompt(prompt, type, writingTone, contentLength, contentFocus, industry, audience, interests);
 
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -136,22 +110,23 @@ FORMAT: Return exactly 8 numbered ideas, each on a new line.`;
             model: 'gpt-4.1-2025-04-14',
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: `Generate 8 professional LinkedIn post ideas for: ${prompt}` }
+              { role: 'user', content: userPrompt }
             ],
-            max_tokens: 800,
-            temperature: 0.7,
+            max_tokens: getMaxTokens(contentLength),
+            temperature: getTempByTone(writingTone),
           }),
         });
 
         if (openaiResponse.ok) {
           const data = await openaiResponse.json();
           const content = data.choices[0]?.message?.content;
-          if (content && content.length > 100) {
+          if (content && content.length > 50) {
             console.log('Quality content generated with OpenAI GPT-4.1');
             return new Response(JSON.stringify({ 
               content, 
               source: 'openai_gpt4.1',
-              quality: 'good'
+              quality: 'good',
+              parameters: { writingTone, contentLength, contentFocus }
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -162,14 +137,15 @@ FORMAT: Return exactly 8 numbered ideas, each on a new line.`;
       }
     }
 
-    // Enhanced fallback with better templates
-    console.log('Using enhanced template system');
-    const content = generateHighQualityIdeas(prompt);
+    // Enhanced fallback with parameter consideration
+    console.log('Using parameter-aware template system');
+    const content = generateParameterAwareContent(prompt, type, writingTone, contentLength, contentFocus, industry, audience);
     
     return new Response(JSON.stringify({ 
       content, 
       source: 'enhanced_template',
-      quality: 'good'
+      quality: 'good',
+      parameters: { writingTone, contentLength, contentFocus }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -186,60 +162,158 @@ FORMAT: Return exactly 8 numbered ideas, each on a new line.`;
   }
 });
 
-function generateHighQualityIdeas(prompt: string): string {
-  const industry = prompt.toLowerCase();
+function getSystemPrompt(type: string, tone: string, length: string, focus: string): string {
+  const basePrompt = `You are an elite LinkedIn content strategist and viral copywriter. You create content that stops the scroll and drives massive engagement.`;
   
-  const ideaTemplates = [
-    `The biggest misconception about ${industry} that's costing professionals their careers`,
-    `5 ${industry} trends that will dominate 2025 (and how to prepare for them)`,
-    `Why traditional ${industry} advice is outdated and what to do instead`,
-    `The ${industry} skill that separates high performers from the average`,
-    `How I transformed my ${industry} career with this one mindset shift`,
-    `The ${industry} mistake I see 90% of professionals making`,
-    `3 ${industry} predictions that will shock you (but I'm confident about)`,
-    `The uncomfortable truth about ${industry} that nobody talks about`
-  ];
+  const toneInstructions = {
+    professional: "Use professional, authoritative language while remaining approachable. Focus on expertise and credibility.",
+    casual: "Write in a conversational, friendly tone. Use everyday language and personal anecdotes.",
+    inspirational: "Create uplifting, motivational content that inspires action. Use emotional storytelling.",
+    educational: "Focus on teaching and providing value. Use clear explanations and actionable insights.",
+    humorous: "Add appropriate humor and wit while maintaining professionalism. Use clever observations."
+  };
 
-  const specificIdeas = {
-    'tech': [
-      'The coding bootcamp graduate who outperformed CS majors (here\'s their secret)',
-      'Why your technical skills matter less than you think for career growth',
-      'The programming language debate that\'s dividing senior developers',
-      'How AI is changing what it means to be a software engineer in 2025',
-      'The soft skill that made me a better developer than any framework',
-      'Why code reviews are broken and how to fix them',
-      'The startup technology stack that failed spectacularly (lessons learned)',
-      'How I went from junior dev to engineering manager in 2 years'
+  const lengthInstructions = {
+    short: "Keep content concise - 1-2 paragraphs maximum. Get straight to the point.",
+    medium: "Create moderate length content - 3-4 paragraphs with good flow.",
+    long: "Develop comprehensive content - 5+ paragraphs with deep insights and examples."
+  };
+
+  const focusInstructions = {
+    'thought-leadership': "Position as industry thought leader. Share unique perspectives and forward-thinking insights.",
+    'personal-story': "Focus on personal experiences and lessons learned. Make it relatable and authentic.",
+    'industry-insights': "Share professional knowledge and industry-specific expertise.",
+    'tips-advice': "Provide actionable advice and practical tips that readers can immediately apply.",
+    'general': "Create engaging professional content that appeals to a broad audience."
+  };
+
+  return `${basePrompt}
+
+TONE: ${toneInstructions[tone] || toneInstructions.professional}
+
+LENGTH: ${lengthInstructions[length] || lengthInstructions.medium}
+
+FOCUS: ${focusInstructions[focus] || focusInstructions.general}
+
+VIRAL CONTENT PRINCIPLES:
+- Start with a hook that stops the scroll (question, bold statement, personal story)
+- Use psychological triggers (curiosity, fear of missing out, social proof)
+- Include specific numbers and data points
+- Create emotional connection through storytelling
+- End with a clear call-to-action or discussion prompt
+- Use short paragraphs and bullet points for readability
+- Include relevant emojis strategically (but not too many)
+
+LINKEDIN BEST PRACTICES:
+- First 2 lines are crucial - make them count
+- Use line breaks for easy mobile reading
+- Include industry-specific terminology when relevant
+- Ask engaging questions to drive comments
+- Share genuine insights from experience`;
+}
+
+function buildUserPrompt(prompt: string, type: string, tone: string, length: string, focus: string, industry: string, audience: string, interests: string): string {
+  let userPrompt = '';
+  
+  if (type === 'ideas') {
+    userPrompt = `Generate exactly 8 highly engaging LinkedIn post ideas for: ${prompt}
+
+REQUIREMENTS:
+- Each idea should be 1-2 sentences
+- Make them scroll-stopping and engagement-driving
+- Include specific angles and unique perspectives
+- Target ${audience || 'professionals'} in ${industry || 'the industry'}
+- Consider interests: ${interests || 'general professional development'}
+
+Return as numbered list (1-8).`;
+  } else {
+    userPrompt = `Create a viral LinkedIn post about: ${prompt}
+
+SPECIFIC REQUIREMENTS:
+- Target audience: ${audience || 'professionals'}
+- Industry context: ${industry || 'general business'}
+- User interests: ${interests || 'professional development'}
+- Writing tone: ${tone}
+- Content length: ${length}
+- Content focus: ${focus}
+
+The post should be optimized for LinkedIn's algorithm and designed to drive maximum engagement.`;
+  }
+
+  return userPrompt;
+}
+
+function getMaxTokens(length: string): number {
+  switch (length) {
+    case 'short': return 300;
+    case 'medium': return 600;
+    case 'long': return 1000;
+    default: return 600;
+  }
+}
+
+function getTempByTone(tone: string): number {
+  switch (tone) {
+    case 'professional': return 0.7;
+    case 'casual': return 0.8;
+    case 'inspirational': return 0.9;
+    case 'educational': return 0.6;
+    case 'humorous': return 0.8;
+    default: return 0.7;
+  }
+}
+
+function generateParameterAwareContent(prompt: string, type: string, tone: string, length: string, focus: string, industry: string, audience: string): string {
+  const hooks = {
+    professional: [
+      "Here's what I've learned about",
+      "The truth about",
+      "Why most professionals struggle with",
+      "3 critical mistakes I see in"
     ],
-    'marketing': [
-      'The marketing campaign that failed but taught me everything about customers',
-      'Why ROI metrics are lying to you about campaign performance',
-      'The psychology trick that increased our conversion rate by 340%',
-      'How personalization became the death of authentic marketing',
-      'The B2B marketing strategy that tripled our qualified leads',
-      'Why most marketing attribution models are completely wrong',
-      'The content marketing mistake that\'s killing your engagement',
-      'How we turned our biggest marketing failure into our greatest success'
+    casual: [
+      "Let me tell you about",
+      "Here's something interesting:",
+      "I just realized something about",
+      "Want to know a secret about"
     ],
-    'finance': [
-      'The investment strategy that beat the market for 5 years straight',
-      'Why traditional financial advice is keeping you poor',
-      'The money mindset shift that doubled my net worth',
-      'How I learned to read financial statements in 30 minutes',
-      'The budgeting method that actually works (and it\'s not 50/30/20)',
-      'Why financial advisors don\'t want you to know this',
-      'The cryptocurrency lesson that cost me $10K but saved my portfolio',
-      'How compound interest really works (with real examples)'
+    inspirational: [
+      "Your breakthrough moment is closer than you think.",
+      "What if I told you that",
+      "The most successful people I know",
+      "Here's how you can transform"
     ]
   };
 
-  let selectedIdeas: string[];
-  
-  if (specificIdeas[industry]) {
-    selectedIdeas = specificIdeas[industry];
-  } else {
-    selectedIdeas = ideaTemplates;
+  const selectedHooks = hooks[tone] || hooks.professional;
+  const hook = selectedHooks[Math.floor(Math.random() * selectedHooks.length)];
+
+  if (type === 'ideas') {
+    return [
+      `1. ${hook} ${prompt} - and why it matters more than ever in 2025`,
+      `2. The ${prompt} mistake that's costing professionals their careers`,
+      `3. 5 ${prompt} trends that will dominate this year (prepare now)`,
+      `4. Why traditional ${prompt} advice is outdated (and what works instead)`,
+      `5. How I transformed my approach to ${prompt} and doubled my results`,
+      `6. The uncomfortable truth about ${prompt} that nobody talks about`,
+      `7. ${prompt}: What the top 1% do differently (and you can too)`,
+      `8. The future of ${prompt} - predictions that will surprise you`
+    ].join('\n');
   }
 
-  return selectedIdeas.slice(0, 8).map((idea, index) => `${index + 1}. ${idea}`).join('\n');
+  // Generate full content based on length
+  const paragraphs = [];
+  paragraphs.push(`${hook} ${prompt}...`);
+  
+  if (length === 'medium' || length === 'long') {
+    paragraphs.push(`Here's what I've discovered after years in ${industry || 'the industry'}:`);
+    paragraphs.push(`→ The key insight that changed everything\n→ Why this matters for ${audience || 'professionals'}\n→ How you can apply this immediately`);
+  }
+  
+  if (length === 'long') {
+    paragraphs.push(`The data speaks for itself - and the results are remarkable.`);
+    paragraphs.push(`What's your experience with ${prompt}? Share your thoughts below. 👇`);
+  }
+
+  return paragraphs.join('\n\n');
 }
