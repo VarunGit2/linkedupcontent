@@ -24,69 +24,89 @@ serve(async (req) => {
       });
     }
 
-    console.log('Generating content for:', prompt);
+    console.log('Generating premium content for:', prompt);
 
-    // Enhanced system prompt for viral LinkedIn content
-    const systemPrompt = `You are a viral LinkedIn content expert who creates posts that get 10,000+ views and hundreds of comments. Your posts hook readers immediately and make them feel compelled to engage.
+    // Professional viral content system prompt
+    const systemPrompt = `You are an elite LinkedIn content strategist who creates viral posts that get 50K+ views and 1000+ comments. Your content stops people mid-scroll and makes them engage immediately.
 
-VIRAL CONTENT FORMULA:
-1. HOOK: Start with curiosity, controversy, or surprising insight
-2. STORY: Personal experience or case study with specific details
-3. INSIGHT: One powerful lesson or framework
-4. ENGAGEMENT: Question that sparks debate/discussion
+VIRAL CONTENT PSYCHOLOGY:
+• Hook Formula: Curiosity gap + Pattern interrupt + Controversy/surprise
+• Story Structure: Problem → Struggle → Discovery → Transformation → Lesson
+• Engagement Triggers: Vulnerability, Authority, Social proof, Specific numbers
+• Format: Short paragraphs (1-2 sentences), bullet points, strategic spacing
 
-PSYCHOLOGICAL TRIGGERS:
-- Pattern interrupts: "Everyone says X, but here's what actually works..."
-- Vulnerability: "I failed at X for 2 years until I discovered..."
-- Authority: "After analyzing 1000+ posts, I found..."
-- Curiosity gaps: "The mistake that cost me $50K..."
-- Social proof: "This simple change increased engagement by 340%"
+CONTENT TEMPLATES:
+Professional Authority: "After analyzing 10,000+ [topic] strategies, here's what actually works..."
+Vulnerability Hook: "I lost $50K making this [topic] mistake so you don't have to..."
+Pattern Interrupt: "Everyone says [common advice]. Here's why they're wrong..."
+Transformation Story: "6 months ago I was struggling with [topic]. Today I [achievement]..."
 
-FORMAT:
-• Hook (attention-grabbing opener)
-• Personal story/example (2-3 short paragraphs)
-• Key insight/lesson (actionable takeaway)
-• Engagement question
-• 3-4 relevant hashtags
+ENGAGEMENT PSYCHOLOGY:
+• Use specific numbers (340% increase, not "significant growth")
+• Include personal failure/struggle stories
+• Challenge conventional wisdom
+• Ask controversial questions
+• Create knowledge gaps people want filled
+• Use power words: discovered, revealed, secret, mistake, truth
 
-Write like a human, not a corporation. Use "I", "you", contractions. Keep paragraphs 1-2 sentences max.`;
+VIRAL STRUCTURE:
+1. Hook (curiosity/controversy)
+2. Context (brief background)
+3. Story/Example (specific details)
+4. Key insight/Framework
+5. Call to action/Question
+6. Strategic hashtags (3-4 max)
 
-    const toneAdjustments = {
-      professional: "Authoritative but approachable. Use data and insights.",
-      casual: "Conversational and relatable. Personal stories and humor.",
-      inspirational: "Motivational storytelling. Focus on transformation.",
-      educational: "Teach valuable lessons. Break down complex concepts.",
-      'thought-leadership': "Unique perspectives. Challenge conventional thinking."
+Write like a human, not a corporation. Use contractions, show personality, be authentic.`;
+
+    const toneModifiers = {
+      professional: "Authoritative but approachable. Use data and proven strategies.",
+      casual: "Conversational and relatable. Include humor and personal anecdotes.",
+      inspirational: "Motivational and uplifting. Focus on transformation and possibility.",
+      educational: "Clear and instructive. Break down complex concepts simply.",
+      'thought-leadership': "Bold and contrarian. Challenge status quo thinking."
     };
 
     const lengthSpecs = {
-      short: "300-400 words - punchy and direct",
-      medium: "500-700 words - detailed with examples", 
-      long: "800-1000 words - comprehensive storytelling"
+      short: "250-400 words - punchy and direct with maximum impact",
+      medium: "400-700 words - detailed storytelling with examples", 
+      long: "700-1000 words - comprehensive with framework/methodology"
     };
 
-    const userPrompt = `Write a viral LinkedIn post about: "${prompt}"
+    const contentPrompt = `Create a viral LinkedIn post about: "${prompt}"
 
 Requirements:
-- Tone: ${tone} (${toneAdjustments[tone] || toneAdjustments.professional})
+- Tone: ${tone} (${toneModifiers[tone]})
 - Length: ${lengthSpecs[length]}
-- Content type: ${contentType}
+- Content focus: ${contentType}
 
-Make it:
-- Hook readers from line 1 with curiosity/controversy
-- Include specific numbers, examples, or personal stories
-- Provide genuine value people will save and share
-- End with a question that sparks discussion
-- Use short paragraphs for mobile reading
-- Add 3-4 strategic hashtags
+Structure:
+- Compelling hook that creates curiosity/surprise
+- Personal story or case study with specific details
+- Actionable insight or framework
+- Engagement question
+- 3-4 strategic hashtags
 
-Focus on viral potential - what would make someone stop scrolling and engage?`;
+Psychology:
+- Use specific numbers and results
+- Include personal vulnerability/struggle
+- Challenge common assumptions
+- Create knowledge gaps
+- End with discussion-sparking question
 
-    // Try Mistral first (best for creative content)
+Format for mobile:
+- Short paragraphs (1-2 sentences)
+- Strategic line breaks
+- Bullet points for key insights
+- Emojis sparingly for emphasis
+
+Make it impossible to scroll past without engaging.`;
+
+    // Try Mistral first (best for creative, viral content)
     const mistralKey = Deno.env.get('MISTRAL_API_KEY');
     if (mistralKey) {
       try {
-        console.log('Using Mistral for creative viral content...');
+        console.log('Using Mistral Large for viral content creation...');
         
         const mistralResponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
           method: 'POST',
@@ -98,9 +118,9 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
             model: 'mistral-large-latest',
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
+              { role: 'user', content: contentPrompt }
             ],
-            max_tokens: length === 'short' ? 600 : length === 'medium' ? 900 : 1300,
+            max_tokens: length === 'short' ? 800 : length === 'medium' ? 1200 : 1600,
             temperature: 0.9,
             top_p: 0.95,
           }),
@@ -109,12 +129,13 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
         if (mistralResponse.ok) {
           const data = await mistralResponse.json();
           const content = data.choices[0]?.message?.content;
-          if (content && content.length > 100) {
-            console.log('High-quality viral content generated with Mistral');
+          if (content && content.length > 150) {
+            console.log('High-quality viral content generated with Mistral Large');
             return new Response(JSON.stringify({ 
               content, 
               source: 'mistral_large',
-              quality: 'premium' 
+              quality: 'premium',
+              note: 'Generated with Mistral Large - optimized for viral content'
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -125,11 +146,11 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
       }
     }
 
-    // Try Groq with Llama
+    // Try Groq with Llama (excellent for professional content)
     const groqKey = Deno.env.get('GROQ_API_KEY');
     if (groqKey) {
       try {
-        console.log('Using Groq Llama for viral content...');
+        console.log('Using Groq Llama for professional viral content...');
         
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -141,9 +162,9 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
             model: 'llama-3.3-70b-versatile',
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
+              { role: 'user', content: contentPrompt }
             ],
-            max_tokens: length === 'short' ? 600 : length === 'medium' ? 900 : 1300,
+            max_tokens: length === 'short' ? 800 : length === 'medium' ? 1200 : 1600,
             temperature: 0.85,
             top_p: 0.9,
             frequency_penalty: 0.3,
@@ -154,27 +175,28 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
         if (groqResponse.ok) {
           const data = await groqResponse.json();
           const content = data.choices[0]?.message?.content;
-          if (content && content.length > 100) {
+          if (content && content.length > 150) {
             console.log('High-quality viral content generated with Groq Llama');
             return new Response(JSON.stringify({ 
               content, 
-              source: 'groq_llama3.3',
-              quality: 'premium' 
+              source: 'groq_llama_70b',
+              quality: 'premium',
+              note: 'Generated with Llama 3.3 70B - professional viral content'
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
         }
       } catch (error) {
-        console.log('Groq failed, trying OpenAI:', error.message);
+        console.log('Groq failed, trying OpenAI GPT-4:', error.message);
       }
     }
 
-    // Try OpenAI as backup
+    // Try OpenAI GPT-4.1 (latest model)
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
     if (openaiKey) {
       try {
-        console.log('Using OpenAI GPT-4o...');
+        console.log('Using OpenAI GPT-4.1...');
         
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -183,12 +205,12 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o',
+            model: 'gpt-4.1-2025-04-14',
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
+              { role: 'user', content: contentPrompt }
             ],
-            max_tokens: length === 'short' ? 600 : length === 'medium' ? 900 : 1300,
+            max_tokens: length === 'short' ? 800 : length === 'medium' ? 1200 : 1600,
             temperature: 0.8,
             top_p: 0.9,
           }),
@@ -197,12 +219,13 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
         if (openaiResponse.ok) {
           const data = await openaiResponse.json();
           const content = data.choices[0]?.message?.content;
-          if (content && content.length > 100) {
-            console.log('Content generated with OpenAI GPT-4o');
+          if (content && content.length > 150) {
+            console.log('High-quality content generated with OpenAI GPT-4.1');
             return new Response(JSON.stringify({ 
               content, 
-              source: 'openai_gpt4o',
-              quality: 'good' 
+              source: 'openai_gpt4.1',
+              quality: 'premium',
+              note: 'Generated with GPT-4.1 - latest OpenAI model'
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -213,15 +236,15 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
       }
     }
 
-    // Enhanced fallback template with viral content structure
-    console.log('Using viral content template');
-    const content = generateViralContent(prompt, tone, length);
+    // Enhanced fallback with premium templates
+    console.log('Using premium viral content template');
+    const content = generatePremiumViralContent(prompt, tone, length, contentType);
     
     return new Response(JSON.stringify({ 
       content, 
-      source: 'viral_template',
+      source: 'premium_template',
       quality: 'good',
-      note: 'Add MISTRAL_API_KEY or GROQ_API_KEY for premium AI content'
+      note: 'Add MISTRAL_API_KEY or GROQ_API_KEY in Supabase secrets for AI-powered content'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -238,108 +261,113 @@ Focus on viral potential - what would make someone stop scrolling and engage?`;
   }
 });
 
-function generateViralContent(prompt: string, tone: string, length: string): string {
+function generatePremiumViralContent(prompt: string, tone: string, length: string, contentType: string): string {
   const viralHooks = [
-    `I made a $50K mistake with ${prompt.toLowerCase()} so you don't have to.`,
-    `After 500+ experiments with ${prompt.toLowerCase()}, here's what actually works:`,
+    `I made a $100K mistake with ${prompt.toLowerCase()} so you don't have to.`,
+    `After 1,000+ experiments with ${prompt.toLowerCase()}, here's what nobody tells you:`,
     `Everyone's doing ${prompt.toLowerCase()} wrong. Here's the uncomfortable truth:`,
     `I was skeptical about ${prompt.toLowerCase()} until this happened...`,
-    `The ${prompt.toLowerCase()} advice everyone gives? It's backwards.`
+    `The ${prompt.toLowerCase()} advice everyone gives? Complete BS.`,
+    `3 years ago, I knew nothing about ${prompt.toLowerCase()}. Today I...`
   ];
 
   const viralStories = [
-    `Last week, I watched a startup founder completely transform their approach to ${prompt.toLowerCase()}.
+    `Last month, I watched a CEO completely transform their approach to ${prompt.toLowerCase()}.
 
-    The results were mind-blowing:
-    → 340% increase in engagement
-    → 2x faster growth rate  
-    → 50% less time spent on the wrong things
+The results were mind-blowing:
+→ 450% increase in engagement
+→ 3x faster growth rate  
+→ 60% less time wasted on wrong tactics
 
-    But here's what they did differently that shocked everyone...`,
+But what they did differently shocked everyone in the room...`,
     
-    `Three months ago, I was completely wrong about ${prompt.toLowerCase()}.
+    `Six months ago, I thought I had ${prompt.toLowerCase()} figured out.
 
-    I thought I knew everything. I had all the "best practices."
+I had all the "expert" strategies.
+I followed every "best practice."
+I did everything the gurus recommended.
 
-    Then I met someone who shattered everything I believed.
+Then I met someone who shattered everything I believed.
 
-    What they showed me changed my entire perspective.`,
+What they showed me changed my entire approach.`,
     
-    `The conversation that changed everything happened at 2 AM.
+    `The conversation that changed everything happened at 1 AM on a Tuesday.
 
-    My mentor looked at my ${prompt.toLowerCase()} strategy and said:
+My mentor looked at my ${prompt.toLowerCase()} strategy and said:
 
-    "You're optimizing for the wrong metric."
+"You're optimizing for vanity metrics, not real results."
 
-    That one sentence cost me sleep but made me $100K.`
+That one sentence cost me sleep but made me $200K.`
   ];
 
-  const viralInsights = [
+  const frameworks = [
     `The secret isn't perfecting ${prompt.toLowerCase()}.
 
-    It's about mastering these 3 psychological principles:
+It's mastering these 3 psychological principles:
 
-    1. People buy emotions, not features
-    2. Clarity beats cleverness every time  
-    3. Consistency compounds exponentially
+1. Focus on outcomes, not activities
+2. Test assumptions, don't assume best practices work
+3. Optimize for compound growth, not quick wins
 
-    Most people focus on #2 and ignore #1 and #3.
+Most people get stuck on #2 and completely ignore #3.
 
-    That's why 90% fail.`,
+That's why 95% plateau.`,
     
-    `${prompt} becomes 10x easier when you understand this framework:
+    `${prompt} becomes 10x easier with the IMPACT framework:
 
-    The IMPACT Method:
-    → I: Identify the real problem (not symptoms)
-    → M: Map the customer journey  
-    → P: Prioritize high-impact actions
-    → A: Automate what works
-    → C: Continuously optimize
-    → T: Track meaningful metrics
+→ I: Identify the real problem (not symptoms)
+→ M: Map the customer journey thoroughly  
+→ P: Prioritize high-leverage actions only
+→ A: Automate what works consistently
+→ C: Continuously optimize based on data
+→ T: Track meaningful metrics, not vanity ones
 
-    I've used this with 50+ companies. It works.`,
+I've used this with 100+ companies. It works.`,
     
     `The breakthrough came when I stopped trying to be perfect at ${prompt.toLowerCase()}.
 
-    Instead, I focused on:
-    • Speed over perfection (ship fast, learn faster)
-    • Progress over planning (done beats perfect)
-    • Results over vanity metrics (revenue over followers)
-    • Systems over goals (process creates outcomes)
+Instead, I focused on:
+• Speed over perfection (ship fast, learn faster)
+• Progress over planning (execution beats strategy)  
+• Results over vanity metrics (revenue over followers)
+• Systems over goals (process creates outcomes)
+• Testing over assumptions (data beats opinions)
 
-    This mindset shift changed everything.`
+This mindset shift changed everything.`
   ];
 
-  const viralQuestions = [
+  const engagementQuestions = [
     `What's the biggest lie you believed about ${prompt.toLowerCase()}?`,
-    `Which of these principles challenges your current approach?`,
-    `What's your biggest ${prompt.toLowerCase()} mistake that taught you the most?`,
-    `How are you measuring success with ${prompt.toLowerCase()}? (Wrong answers only 😏)`,
-    `What would you add to this framework based on your experience?`
+    `Which principle challenges your current approach the most?`,
+    `What's your biggest ${prompt.toLowerCase()} mistake that actually taught you something valuable?`,
+    `How do you measure success with ${prompt.toLowerCase()}? (Be honest 😏)`,
+    `What would you add to this framework from your experience?`,
+    `Who else needs to hear this? Tag someone who's struggling with ${prompt.toLowerCase()}.`
   ];
 
-  const hashtags = ['#Entrepreneurship', '#Leadership', '#GrowthHacking', '#BusinessTips', '#Success'];
+  const trendingHashtags = ['#Entrepreneurship', '#Leadership', '#GrowthHacking', '#BusinessStrategy', '#Success', '#Innovation', '#Marketing', '#Productivity'];
 
   const hook = viralHooks[Math.floor(Math.random() * viralHooks.length)];
   const story = viralStories[Math.floor(Math.random() * viralStories.length)];
-  const insight = viralInsights[Math.floor(Math.random() * viralInsights.length)];
-  const question = viralQuestions[Math.floor(Math.random() * viralQuestions.length)];
+  const framework = frameworks[Math.floor(Math.random() * frameworks.length)];
+  const question = engagementQuestions[Math.floor(Math.random() * engagementQuestions.length)];
+  const hashtags = trendingHashtags.sort(() => 0.5 - Math.random()).slice(0, 4);
 
   return `${hook}
 
 ${story}
 
-${insight}
+${framework}
 
 The bottom line:
 
-${prompt} isn't about having all the answers.
+${prompt} isn't about having all the perfect strategies.
 
-It's about asking better questions and taking massive action.
+It's about testing faster, learning quicker, and optimizing relentlessly.
 
 ${question}
 
 ---
 
-${hashtags.slice(0, 4).join(' ')}`;
+${hashtags.join(' ')}`;
 }

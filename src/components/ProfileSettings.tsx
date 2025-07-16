@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,8 +80,16 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
     setIsConnecting(true);
     
     try {
+      // Clear any existing LinkedIn data
+      localStorage.removeItem('linkedin-connected');
+      localStorage.removeItem('linkedin-profile');
+      localStorage.removeItem('linkedin-access-token');
+      localStorage.removeItem('linkedin-user-id');
+      localStorage.removeItem('linkedin-oauth-state');
+      localStorage.removeItem('linkedin-redirect-uri');
+      
       const redirectUri = window.location.origin;
-      console.log('Using redirect URI:', redirectUri);
+      console.log('Initiating LinkedIn OAuth with redirect URI:', redirectUri);
       
       const { data, error } = await supabase.functions.invoke('linkedin-auth', {
         body: {
@@ -98,16 +105,19 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
 
       if (data?.needsConfig) {
         toast({
-          title: "LinkedIn Setup Required",
-          description: "LinkedIn integration is not configured. Please contact support.",
+          title: "LinkedIn Configuration Required",
+          description: "LinkedIn integration is not configured. Please contact support to set up LinkedIn credentials.",
           variant: "destructive",
         });
         return;
       }
 
       if (data?.authUrl && data?.state) {
+        console.log('Storing OAuth state and redirecting to LinkedIn...');
         localStorage.setItem('linkedin-oauth-state', data.state);
         localStorage.setItem('linkedin-redirect-uri', redirectUri);
+        
+        // Force redirect to LinkedIn
         window.location.href = data.authUrl;
       } else {
         throw new Error('Failed to retrieve LinkedIn authentication URL');
@@ -115,8 +125,8 @@ const ProfileSettings = ({ user, onBack }: ProfileSettingsProps) => {
     } catch (error: any) {
       console.error('LinkedIn connection error:', error);
       toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect to LinkedIn",
+        title: "LinkedIn Connection Failed",
+        description: error.message || "Failed to connect to LinkedIn. Please try again.",
         variant: "destructive",
       });
     } finally {
