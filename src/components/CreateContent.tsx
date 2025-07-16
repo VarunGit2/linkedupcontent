@@ -187,9 +187,9 @@ const CreateContent: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="short">⚡ Short (1-2 paragraphs)</SelectItem>
-                    <SelectItem value="medium">📝 Medium (3-4 paragraphs)</SelectItem>
-                    <SelectItem value="long">📖 Long (5+ paragraphs)</SelectItem>
+                    <SelectItem value="short">⚡ Short (100-200 words)</SelectItem>
+                    <SelectItem value="medium">📝 Medium (400-600 words)</SelectItem>
+                    <SelectItem value="long">📖 Long (800+ words)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

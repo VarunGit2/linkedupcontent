@@ -22,7 +22,7 @@ serve(async (req) => {
       industry = '',
       audience = '',
       interests = '',
-      ideaCount = 6  // Allow customizable idea count
+      ideaCount = 6
     } = await req.json();
     
     if (!prompt?.trim()) {
@@ -98,7 +98,7 @@ serve(async (req) => {
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
     if (openaiKey) {
       try {
-        console.log('Using OpenAI GPT-4.1 as backup...');
+        console.log('Using OpenAI GPT-4o-mini as backup...');
         
         const systemPrompt = getSystemPrompt(type, writingTone, contentLength, contentFocus);
         const userPrompt = buildUserPrompt(prompt, type, writingTone, contentLength, contentFocus, industry, audience, interests, ideaCount);
@@ -110,7 +110,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4.1-2025-04-14',
+            model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
@@ -124,10 +124,10 @@ serve(async (req) => {
           const data = await openaiResponse.json();
           const content = data.choices[0]?.message?.content;
           if (content && content.length > 50) {
-            console.log('Quality content generated with OpenAI GPT-4.1');
+            console.log('Quality content generated with OpenAI GPT-4o-mini');
             return new Response(JSON.stringify({ 
               content, 
-              source: 'openai_gpt4.1',
+              source: 'openai_gpt4o_mini',
               quality: 'good',
               parameters: { writingTone, contentLength, contentFocus, ideaCount }
             }), {
@@ -177,9 +177,9 @@ function getSystemPrompt(type: string, tone: string, length: string, focus: stri
   };
 
   const lengthInstructions = {
-    short: "Keep content concise and punchy - 1-2 paragraphs maximum. Every word must count.",
-    medium: "Create well-structured content - 3-4 paragraphs with clear flow and compelling narrative.",
-    long: "Develop comprehensive, in-depth content - 5+ paragraphs with detailed insights and examples."
+    short: "Keep content concise and punchy - 100-200 words maximum. Every word must count.",
+    medium: "Create well-structured content - 400-600 words with clear flow and compelling narrative.",
+    long: "Develop comprehensive, in-depth content - 800+ words with detailed insights and examples."
   };
 
   const focusInstructions = {
@@ -262,14 +262,14 @@ REQUIREMENTS:
 
 function getMaxTokens(length: string, type: string = 'content'): number {
   if (type === 'ideas') {
-    return 800; // More tokens for multiple ideas
+    return 800;
   }
   
   switch (length) {
     case 'short': return 400;
-    case 'medium': return 700;
-    case 'long': return 1200;
-    default: return 700;
+    case 'medium': return 1000;
+    case 'long': return 1500;
+    default: return 1000;
   }
 }
 
@@ -317,18 +317,29 @@ function generateParameterAwareContent(prompt: string, type: string, tone: strin
     return ideas.join('\n');
   }
 
-  // Generate full content based on parameters
+  // Generate content based on length parameter
   const paragraphs = [];
   paragraphs.push(`${hook} ${prompt}...`);
   
-  if (length === 'medium' || length === 'long') {
+  if (length === 'short') {
+    paragraphs.push(`This insight could transform how ${audience || 'professionals'} in ${industry || 'the industry'} approach their work.`);
+    paragraphs.push(`What's your experience with ${prompt}? Share below! 👇`);
+  } else if (length === 'medium') {
     paragraphs.push(`Here's what ${audience || 'professionals'} in ${industry || 'the industry'} need to know:`);
-    paragraphs.push(`→ The critical insight that changes everything\n→ Why this matters for your career\n→ How to apply this immediately`);
-  }
-  
-  if (length === 'long') {
-    paragraphs.push(`The data speaks for itself - and the results are remarkable.`);
-    paragraphs.push(`What's your experience with ${prompt}? Share your thoughts below. 👇`);
+    paragraphs.push(`→ The critical insight that changes everything\n→ Why this matters for your career\n→ How to apply this immediately\n→ The common mistakes to avoid\n→ Real-world examples that prove this works`);
+    paragraphs.push(`The data speaks for itself - and the results are remarkable when you implement these strategies correctly.`);
+    paragraphs.push(`I've seen countless ${audience || 'professionals'} transform their approach using these principles. The key is understanding that ${prompt} isn't just a trend - it's a fundamental shift in how we work.`);
+    paragraphs.push(`What's your experience with ${prompt}? How are you adapting to these changes? Share your thoughts below. 👇`);
+  } else { // long
+    paragraphs.push(`Here's what ${audience || 'professionals'} in ${industry || 'the industry'} need to know:`);
+    paragraphs.push(`→ The critical insight that changes everything\n→ Why this matters for your career\n→ How to apply this immediately\n→ The common mistakes to avoid\n→ Real-world examples that prove this works\n→ Advanced strategies for maximum impact`);
+    paragraphs.push(`The data speaks for itself - and the results are remarkable when you implement these strategies correctly. Let me break this down further:`);
+    paragraphs.push(`First, understand that ${prompt} requires a fundamental shift in mindset. Most ${audience || 'professionals'} approach this the wrong way, which is why they struggle to see results.`);
+    paragraphs.push(`Second, the implementation phase is where most people fail. They understand the theory but struggle with execution. Here's how to bridge that gap effectively.`);
+    paragraphs.push(`Third, measurement and optimization are crucial. Without proper tracking, you're flying blind and missing opportunities for improvement.`);
+    paragraphs.push(`I've worked with hundreds of ${audience || 'professionals'} who've successfully implemented these strategies. The pattern is clear: those who follow this framework see 3x better results than those who don't.`);
+    paragraphs.push(`The bottom line? ${prompt} isn't optional anymore - it's essential for staying competitive in today's market.`);
+    paragraphs.push(`What's your experience with ${prompt}? Have you encountered these challenges? What strategies have worked best for you? Let's discuss in the comments! 👇`);
   }
 
   return paragraphs.join('\n\n');
