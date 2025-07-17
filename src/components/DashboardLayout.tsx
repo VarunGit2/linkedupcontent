@@ -216,17 +216,25 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
         </div>
 
-        {/* Desktop Header */}
-        <div className="hidden lg:block flex-1">
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <div className="flex-1" />
-            <div className="flex items-center gap-4">
-              <ModeToggle />
-              <Badge variant="outline" className="hidden xl:flex">
-                {user.name}
-              </Badge>
+        {/* Main Content Container */}
+        <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'lg:ml-0' : 'lg:ml-0'}`}>
+          {/* Desktop Header */}
+          <div className="hidden lg:block">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex-1" />
+              <div className="flex items-center gap-4">
+                <ModeToggle />
+                <Badge variant="outline" className="hidden xl:flex">
+                  {user.name}
+                </Badge>
+              </div>
             </div>
           </div>
+
+          {/* Main Content */}
+          <main className="p-6">
+            {children}
+          </main>
         </div>
 
         {/* Overlay for mobile */}
@@ -236,13 +244,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             onClick={() => setSidebarOpen(false)}
           />
         )}
-      </div>
-
-      {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'lg:ml-72' : 'lg:ml-20'}`}>
-        <main className="p-6">
-          {children}
-        </main>
       </div>
     </div>
   );
