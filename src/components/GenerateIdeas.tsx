@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,42 @@ const GenerateIdeas: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
+  // Load saved content on component mount
+  useEffect(() => {
+    const savedIdeas = sessionStorage.getItem('generateIdeas_ideas');
+    const savedIndustry = sessionStorage.getItem('generateIdeas_industry');
+    const savedInterests = sessionStorage.getItem('generateIdeas_interests');
+    const savedAudience = sessionStorage.getItem('generateIdeas_targetAudience');
+    const savedCount = sessionStorage.getItem('generateIdeas_ideaCount');
+    
+    if (savedIdeas) {
+      try {
+        setIdeas(JSON.parse(savedIdeas));
+      } catch (e) {
+        console.error('Error parsing saved ideas:', e);
+      }
+    }
+    if (savedIndustry) setIndustry(savedIndustry);
+    if (savedInterests) setInterests(savedInterests);
+    if (savedAudience) setTargetAudience(savedAudience);
+    if (savedCount) setIdeaCount(savedCount);
+  }, []);
+
+  // Save content to session storage whenever it changes
+  useEffect(() => {
+    if (ideas.length > 0) {
+      sessionStorage.setItem('generateIdeas_ideas', JSON.stringify(ideas));
+    }
+  }, [ideas]);
+
+  // Save form data to session storage
+  useEffect(() => {
+    sessionStorage.setItem('generateIdeas_industry', industry);
+    sessionStorage.setItem('generateIdeas_interests', interests);
+    sessionStorage.setItem('generateIdeas_targetAudience', targetAudience);
+    sessionStorage.setItem('generateIdeas_ideaCount', ideaCount);
+  }, [industry, interests, targetAudience, ideaCount]);
+
   const generateIdeas = async () => {
     if (!industry.trim()) {
       toast({
@@ -32,7 +68,7 @@ const GenerateIdeas: React.FC = () => {
     setIsGenerating(true);
     
     try {
-      const promptContext = `Generate ${ideaCount} professional LinkedIn post ideas for someone in the ${industry} industry.${interests ? ` Their interests include: ${interests}.` : ''}${targetAudience ? ` Their target audience is: ${targetAudience}.` : ''} Each idea should be engaging, thought-provoking, and designed to spark conversations. Make them unique and actionable.`;
+      const promptContext = `${industry}${interests ? ` with focus on ${interests}` : ''}${targetAudience ? ` for ${targetAudience}` : ''}`;
 
       console.log('Sending prompt:', promptContext);
 

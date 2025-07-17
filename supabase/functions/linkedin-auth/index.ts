@@ -21,12 +21,16 @@ serve(async (req) => {
       const state = crypto.randomUUID()
       const scope = 'openid profile email w_member_social'
       
+      // Use the exact redirect URI provided
       const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
         `response_type=code&` +
         `client_id=${CLIENT_ID}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `state=${state}&` +
         `scope=${encodeURIComponent(scope)}`
+
+      console.log('Generated LinkedIn auth URL:', authUrl)
+      console.log('Using redirect URI:', redirectUri)
 
       return new Response(JSON.stringify({
         success: true,
@@ -59,13 +63,20 @@ serve(async (req) => {
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text()
         console.error('Token exchange failed:', errorText)
-        throw new Error(`Token exchange failed: ${tokenResponse.status} ${errorText}`)
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Token exchange failed: ${tokenResponse.status} - ${errorText}`,
+          details: errorText
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
       }
 
       const tokenData = await tokenResponse.json()
       console.log('Token exchange successful')
 
-      // Get user profile
+      // Get user profile using the new LinkedIn API
       const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
@@ -75,11 +86,44 @@ serve(async (req) => {
       if (!profileResponse.ok) {
         const errorText = await profileResponse.text()
         console.error('Profile fetch failed:', errorText)
-        throw new Error(`Profile fetch failed: ${profileResponse.status}`)
+        
+        // Try the legacy profile API as fallback
+        const legacyResponse = await fetch('https://api.linkedin.com/v2/people/~?projection=(id,firstName,lastName,emailAddress)', {
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+          },
+        })
+        
+        if (legacyResponse.ok) {
+          const legacyData = await legacyResponse.json()
+          const profileData = {
+            sub: legacyData.id,
+            name: `${legacyData.firstName?.localized?.en_US || ''} ${legacyData.lastName?.localized?.en_US || ''}`.trim(),
+            email: legacyData.emailAddress,
+            picture: null
+          }
+          
+          return new Response(JSON.stringify({
+            success: true,
+            accessToken: tokenData.access_token,
+            profile: profileData
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Profile fetch failed: ${profileResponse.status} - ${errorText}`,
+          details: errorText
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
       }
 
       const profileData = await profileResponse.json()
-      console.log('Profile fetch successful:', profileData.name)
+      console.log('Profile fetch successful:', profileData.name || profileData.sub)
 
       return new Response(JSON.stringify({
         success: true,

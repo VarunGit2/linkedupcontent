@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +25,45 @@ const CreateContent: React.FC = () => {
   const [contentQuality, setContentQuality] = useState('');
   const [contentSource, setContentSource] = useState('');
   const { toast } = useToast();
+
+  // Load saved content on component mount
+  useEffect(() => {
+    const savedContent = sessionStorage.getItem('createContent_generatedContent');
+    const savedTopic = sessionStorage.getItem('createContent_topic');
+    const savedIndustry = sessionStorage.getItem('createContent_industry');
+    const savedAudience = sessionStorage.getItem('createContent_audience');
+    const savedInterests = sessionStorage.getItem('createContent_interests');
+    const savedTone = sessionStorage.getItem('createContent_writingTone');
+    const savedLength = sessionStorage.getItem('createContent_contentLength');
+    const savedFocus = sessionStorage.getItem('createContent_contentFocus');
+    
+    if (savedContent) setGeneratedContent(savedContent);
+    if (savedTopic) setTopic(savedTopic);
+    if (savedIndustry) setIndustry(savedIndustry);
+    if (savedAudience) setAudience(savedAudience);
+    if (savedInterests) setInterests(savedInterests);
+    if (savedTone) setWritingTone(savedTone);
+    if (savedLength) setContentLength(savedLength);
+    if (savedFocus) setContentFocus(savedFocus);
+  }, []);
+
+  // Save content to session storage whenever it changes
+  useEffect(() => {
+    if (generatedContent) {
+      sessionStorage.setItem('createContent_generatedContent', generatedContent);
+    }
+  }, [generatedContent]);
+
+  // Save form data to session storage
+  useEffect(() => {
+    sessionStorage.setItem('createContent_topic', topic);
+    sessionStorage.setItem('createContent_industry', industry);
+    sessionStorage.setItem('createContent_audience', audience);
+    sessionStorage.setItem('createContent_interests', interests);
+    sessionStorage.setItem('createContent_writingTone', writingTone);
+    sessionStorage.setItem('createContent_contentLength', contentLength);
+    sessionStorage.setItem('createContent_contentFocus', contentFocus);
+  }, [topic, industry, audience, interests, writingTone, contentLength, contentFocus]);
 
   const generateContent = async () => {
     if (!topic.trim()) {
@@ -66,7 +105,7 @@ const CreateContent: React.FC = () => {
         setContentQuality(data.quality || 'good');
         setContentSource(data.source || 'template');
         
-        const qualityEmoji = data.quality === 'premium' ? '🚀' : data.quality === 'good' ? '✨' : '👍';
+        const qualityEmoji = data.quality === 'premium' ? '🚀' : data.quality === 'high' ? '✨' : '👍';
         
         toast({
           title: `${qualityEmoji} Content Generated Successfully!`,
@@ -108,11 +147,11 @@ const CreateContent: React.FC = () => {
   const getQualityBadge = () => {
     const badges = {
       premium: { color: 'bg-gradient-to-r from-purple-600 to-pink-600', text: '🚀 Premium AI', desc: 'Groq Llama 70B' },
-      good: { color: 'bg-gradient-to-r from-blue-600 to-indigo-600', text: '✨ High Quality', desc: 'OpenAI GPT-4.1' },
-      basic: { color: 'bg-gradient-to-r from-green-600 to-emerald-600', text: '👍 Good', desc: 'Enhanced Template' }
+      high: { color: 'bg-gradient-to-r from-blue-600 to-indigo-600', text: '✨ High Quality', desc: 'OpenAI GPT-4o-mini' },
+      good: { color: 'bg-gradient-to-r from-green-600 to-emerald-600', text: '👍 Good', desc: 'Enhanced Template' }
     };
     
-    const badge = badges[contentQuality] || badges.basic;
+    const badge = badges[contentQuality] || badges.good;
     return (
       <Badge className={`${badge.color} text-white border-0 text-xs`}>
         {badge.text} ({badge.desc})
@@ -187,7 +226,7 @@ const CreateContent: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="short">⚡ Short (100-200 words)</SelectItem>
+                    <SelectItem value="short">⚡ Short (150-250 words)</SelectItem>
                     <SelectItem value="medium">📝 Medium (400-600 words)</SelectItem>
                     <SelectItem value="long">📖 Long (800+ words)</SelectItem>
                   </SelectContent>
@@ -341,23 +380,6 @@ const CreateContent: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Tips Section */}
-      <Card className="border-l-4 border-l-green-500 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-        <CardContent className="pt-6">
-          <h3 className="font-semibold text-lg mb-3 text-green-800 dark:text-green-300">
-            💡 Pro Tips for Viral LinkedIn Content
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-green-700 dark:text-green-300">
-            <div>• Start with a compelling hook in the first 2 lines</div>
-            <div>• Use specific numbers and data points</div>
-            <div>• Include personal stories and experiences</div>
-            <div>• Ask engaging questions to drive comments</div>
-            <div>• Use line breaks for mobile readability</div>
-            <div>• Add relevant emojis strategically</div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
