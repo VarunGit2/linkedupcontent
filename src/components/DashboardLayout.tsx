@@ -1,66 +1,25 @@
 
 import React, { useState } from 'react';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  PenTool,
-  Lightbulb,
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { 
+  PenTool, 
+  Lightbulb, 
   Calendar,
+  BarChart3,
   User,
   Settings,
   LogOut,
-  BarChart3,
-  Menu
-} from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { ModeToggle } from "@/components/ModeToggle"
-import { useTheme } from 'next-themes'
-
-interface NavItemProps {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  onClick: (id: string) => void;
-  active: boolean;
-}
-
-const NavItem: React.FC<NavItemProps> = ({ id, label, icon: Icon, onClick, active }) => {
-  return (
-    <li>
-      <Button
-        variant={active ? "secondary" : "ghost"}
-        onClick={() => onClick(id)}
-        className={`justify-start w-full font-normal transition-all duration-200 ${
-          active 
-            ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-400" 
-            : "hover:bg-gray-100 hover:text-gray-900 hover:translate-x-1 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-        }`}
-      >
-        <Icon className="mr-3 h-4 w-4" />
-        <span>{label}</span>
-      </Button>
-    </li>
-  );
-};
+  Menu,
+  X,
+  ChevronRight
+} from 'lucide-react';
+import { ModeToggle } from '@/components/ModeToggle';
 
 interface DashboardLayoutProps {
+  children: React.ReactNode;
   user: {
     email: string;
     name: string;
@@ -69,161 +28,222 @@ interface DashboardLayoutProps {
   onLogout: () => void;
   currentPage: string;
   onNavigate: (page: string) => void;
-  children: React.ReactNode;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+  children,
   user,
   onLogout,
   currentPage,
   onNavigate,
-  children
 }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { theme } = useTheme();
-
-  const handleNavigation = (page: string) => {
-    onNavigate(page);
-    setIsMenuOpen(false);
-  };
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   const navigationItems = [
-    { id: 'create-content', label: 'Create Content', icon: PenTool },
-    { id: 'generate-ideas', label: 'Generate Ideas', icon: Lightbulb },
-    { id: 'schedule-posts', label: 'Schedule Posts', icon: Calendar },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { 
+      id: 'create-content', 
+      label: 'Create Content', 
+      icon: PenTool,
+      description: 'Generate AI-powered content'
+    },
+    { 
+      id: 'generate-ideas', 
+      label: 'Generate Ideas', 
+      icon: Lightbulb,
+      description: 'Get content inspiration'
+    },
+    { 
+      id: 'schedule-posts', 
+      label: 'Schedule Posts', 
+      icon: Calendar,
+      description: 'Plan your content calendar'
+    },
+    { 
+      id: 'analytics', 
+      label: 'Analytics', 
+      icon: BarChart3,
+      description: 'Track your performance'
+    },
+    { 
+      id: 'profile', 
+      label: 'Profile', 
+      icon: User,
+      description: 'Manage your profile'
+    },
+    { 
+      id: 'settings', 
+      label: 'Settings', 
+      icon: Settings,
+      description: 'App preferences'
+    },
   ];
 
-  const getPageTitle = (page: string) => {
-    const item = navigationItems.find(item => item.id === page);
-    return item ? item.label : 'Dashboard';
-  };
-
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Mobile Menu */}
-      <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" className="md:hidden fixed top-4 left-4 z-50 bg-white/80 backdrop-blur-sm border shadow-lg">
-            <Menu className="h-4 w-4" />
+    <div className="min-h-screen bg-background">
+      {/* Mobile Header */}
+      <div className="lg:hidden flex items-center justify-between p-4 border-b">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-72 bg-white/95 backdrop-blur-sm">
-          <SheetHeader className="text-left">
-            <SheetTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              LinkedUp
-            </SheetTitle>
-            <SheetDescription>
-              Professional LinkedIn content management
-            </SheetDescription>
-          </SheetHeader>
-          <Separator className="my-4" />
-          <ScrollArea className="h-[calc(100vh-10rem)] pl-2">
-            <ul className="flex flex-col space-y-2 list-none">
-              {navigationItems.map((item) => (
-                <NavItem
-                  key={item.id}
-                  id={item.id}
-                  label={item.label}
-                  icon={item.icon}
-                  onClick={handleNavigation}
-                  active={currentPage === item.id}
-                />
-              ))}
-            </ul>
-          </ScrollArea>
-          <Separator className="my-4" />
-          <Button variant="outline" className="w-full justify-start hover:bg-red-50 hover:text-red-600 hover:border-red-200" onClick={onLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </Button>
-        </SheetContent>
-      </Sheet>
-
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-72 bg-white/95 backdrop-blur-sm border-r border-gray-200 shadow-xl dark:bg-gray-900/95 dark:border-gray-700">
-        <div className="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
-          <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             LinkedUp
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <ModeToggle />
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-xs">{user.initials}</AvatarFallback>
+          </Avatar>
+        </div>
+      </div>
+
+      <div className="flex">
+        {/* Sidebar */}
+        <div 
+          className={`
+            fixed lg:relative z-40 h-full lg:h-screen transition-all duration-300 ease-in-out
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            ${sidebarExpanded ? 'w-72' : 'w-16 lg:w-20'}
+            bg-card border-r border-border
+          `}
+          onMouseEnter={() => setSidebarExpanded(true)}
+          onMouseLeave={() => setSidebarExpanded(false)}
+        >
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">L</span>
+              </div>
+              {sidebarExpanded && (
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent truncate">
+                    LinkedUp
+                  </h1>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-2">
+            <div className="space-y-1">
+              {navigationItems.map((item) => {
+                const isActive = currentPage === item.id;
+                return (
+                  <Button
+                    key={item.id}
+                    variant={isActive ? "secondary" : "ghost"}
+                    className={`
+                      w-full justify-start gap-3 h-12 px-3 transition-all duration-200
+                      ${sidebarExpanded ? 'px-4' : 'px-3'}
+                      ${isActive ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-accent'}
+                      group relative
+                    `}
+                    onClick={() => {
+                      onNavigate(item.id);
+                      setSidebarOpen(false);
+                    }}
+                  >
+                    <item.icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-primary' : ''}`} />
+                    {sidebarExpanded && (
+                      <>
+                        <div className="flex-1 text-left min-w-0">
+                          <div className="font-medium truncate">{item.label}</div>
+                          <div className="text-xs text-muted-foreground truncate">{item.description}</div>
+                        </div>
+                        {isActive && <ChevronRight className="h-4 w-4 text-primary" />}
+                      </>
+                    )}
+                    
+                    {/* Tooltip for collapsed state */}
+                    {!sidebarExpanded && (
+                      <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                        <div className="font-medium">{item.label}</div>
+                        <div className="text-xs text-muted-foreground">{item.description}</div>
+                      </div>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* User Section */}
+          <div className="p-4 border-t border-border">
+            {sidebarExpanded ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="text-sm">{user.initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate">{user.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onLogout}
+                  className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-sm">{user.initials}</AvatarFallback>
+                </Avatar>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onLogout}
+                  className="w-8 h-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-        <ScrollArea className="flex-1 p-4">
-          <ul className="flex flex-col space-y-2 list-none">
-            {navigationItems.map((item) => (
-              <NavItem
-                key={item.id}
-                id={item.id}
-                label={item.label}
-                icon={item.icon}
-                onClick={handleNavigation}
-                active={currentPage === item.id}
-              />
-            ))}
-          </ul>
-        </ScrollArea>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <Button variant="outline" className="w-full justify-start hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors" onClick={onLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </Button>
+
+        {/* Desktop Header */}
+        <div className="hidden lg:block flex-1">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex-1" />
+            <div className="flex items-center gap-4">
+              <ModeToggle />
+              <Badge variant="outline" className="hidden xl:flex">
+                {user.name}
+              </Badge>
+            </div>
+          </div>
         </div>
-      </aside>
+
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/20 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex items-center justify-between h-16 px-6 bg-white/80 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-gray-900/80 dark:border-gray-700">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200 capitalize">
-              {getPageTitle(currentPage)}
-            </h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <ModeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-10 w-10 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                      {user.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleNavigation('profile')}>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNavigation('settings')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onLogout} className="text-red-600 focus:text-red-600">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="py-6">
-            {children}
-          </div>
-        </div>
-      </main>
+      <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'lg:ml-72' : 'lg:ml-20'}`}>
+        <main className="p-6">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

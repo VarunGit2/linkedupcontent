@@ -2,17 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, TrendingUp, Calendar, Clock, Users, Eye, Heart, MessageCircle, Share, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BarChart3, TrendingUp, Calendar, Users, Eye, Heart, MessageCircle, Share, Target, AlertCircle } from 'lucide-react';
 
 interface AnalyticsData {
   totalPosts: number;
   publishedThisMonth: number;
   scheduledPosts: number;
-  averageEngagement: number;
-  topPerformingPost: string;
-  linkedInConnected: boolean;
   contentGenerated: number;
   ideasGenerated: number;
+  linkedInConnected: boolean;
 }
 
 const Analytics: React.FC = () => {
@@ -20,50 +19,42 @@ const Analytics: React.FC = () => {
     totalPosts: 0,
     publishedThisMonth: 0,
     scheduledPosts: 0,
-    averageEngagement: 0,
-    topPerformingPost: '',
-    linkedInConnected: false,
     contentGenerated: 0,
-    ideasGenerated: 0
+    ideasGenerated: 0,
+    linkedInConnected: false
   });
 
   useEffect(() => {
-    loadAnalytics();
+    loadRealAnalytics();
   }, []);
 
-  const loadAnalytics = () => {
-    // Load scheduled posts
+  const loadRealAnalytics = () => {
+    // Load actual data from localStorage
     const savedPosts = localStorage.getItem('scheduled-posts');
     const posts = savedPosts ? JSON.parse(savedPosts) : [];
     
-    // Load LinkedIn connection status
-    const isLinkedInConnected = localStorage.getItem('linkedin-connected') === 'true';
+    const contentStats = localStorage.getItem('content-stats') || '{"generated":0,"ideas":0}';
+    const stats = JSON.parse(contentStats);
     
-    // Load content generation stats
-    const contentStats = localStorage.getItem('content-stats');
-    const stats = contentStats ? JSON.parse(contentStats) : { generated: 0, ideas: 0 };
+    const isLinkedInConnected = localStorage.getItem('linkedin-connected') === 'true';
 
+    // Calculate real metrics
     const now = new Date();
-    const thisMonth = posts.filter(post => {
-      const postDate = new Date(post.createdAt);
+    const thisMonth = posts.filter((post: any) => {
+      const postDate = new Date(post.createdAt || post.scheduledDate);
       return postDate.getMonth() === now.getMonth() && postDate.getFullYear() === now.getFullYear();
     });
 
-    const publishedThisMonth = posts.filter(post => 
-      post.status === 'published' && thisMonth.includes(post)
-    ).length;
-
-    const scheduledPosts = posts.filter(post => post.status === 'scheduled').length;
+    const publishedPosts = posts.filter((post: any) => post.status === 'published');
+    const scheduledPosts = posts.filter((post: any) => post.status === 'scheduled');
 
     setAnalytics({
       totalPosts: posts.length,
-      publishedThisMonth,
-      scheduledPosts,
-      averageEngagement: Math.floor(Math.random() * 500) + 100, // Simulated
-      topPerformingPost: posts.length > 0 ? posts[0].content.substring(0, 50) + '...' : 'No posts yet',
-      linkedInConnected: isLinkedInConnected,
+      publishedThisMonth: publishedPosts.filter((post: any) => thisMonth.includes(post)).length,
+      scheduledPosts: scheduledPosts.length,
       contentGenerated: stats.generated || 0,
-      ideasGenerated: stats.ideas || 0
+      ideasGenerated: stats.ideas || 0,
+      linkedInConnected: isLinkedInConnected
     });
   };
 
@@ -102,6 +93,8 @@ const Analytics: React.FC = () => {
     }
   ];
 
+  const hasAnyData = analytics.totalPosts > 0 || analytics.contentGenerated > 0 || analytics.ideasGenerated > 0;
+
   return (
     <div className="space-y-6 animate-fade-in px-2 sm:px-0">
       <div className="text-center">
@@ -109,9 +102,25 @@ const Analytics: React.FC = () => {
           Analytics Dashboard
         </h1>
         <p className="text-gray-600 dark:text-gray-300 mt-3 text-base sm:text-lg px-4">
-          Track your LinkedIn content performance and growth 📊
+          Track your real LinkedIn content performance and growth 📊
         </p>
       </div>
+
+      {!hasAnyData && (
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              <div>
+                <h3 className="font-semibold text-amber-800 dark:text-amber-300">No Data Available Yet</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                  Start creating content and scheduling posts to see your analytics data here.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -156,117 +165,78 @@ const Analytics: React.FC = () => {
                 {analytics.linkedInConnected ? "Connected" : "Disconnected"}
               </Badge>
             </div>
+            {!analytics.linkedInConnected && (
+              <p className="text-sm text-muted-foreground mt-3">
+                Connect your LinkedIn account to start publishing posts and track real engagement metrics.
+              </p>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-purple-600" />
-              Engagement Metrics
+              <Target className="h-5 w-5 text-green-600" />
+              AI Content Generation
             </CardTitle>
             <CardDescription>
-              Simulated engagement data for your posts
+              Your AI-powered content creation activity
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-red-500" />
-                  <span className="text-sm">Average Likes</span>
-                </div>
-                <span className="font-medium">{analytics.averageEngagement}</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{analytics.contentGenerated}</div>
+                <div className="text-sm text-green-700 dark:text-green-300">Posts Generated</div>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm">Average Comments</span>
-                </div>
-                <span className="font-medium">{Math.floor(analytics.averageEngagement * 0.1)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Share className="h-4 w-4 text-green-500" />
-                  <span className="text-sm">Average Shares</span>
-                </div>
-                <span className="font-medium">{Math.floor(analytics.averageEngagement * 0.05)}</span>
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{analytics.ideasGenerated}</div>
+                <div className="text-sm text-blue-700 dark:text-blue-300">Ideas Generated</div>
               </div>
             </div>
+            {analytics.contentGenerated === 0 && analytics.ideasGenerated === 0 && (
+              <p className="text-sm text-muted-foreground mt-3">
+                Use the AI content generator to create posts and generate ideas to see your productivity metrics.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Content Generation Stats */}
-      <Card className="border-l-4 border-l-green-500">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-green-600" />
-            AI Content Generation
-          </CardTitle>
-          <CardDescription>
-            Your AI-powered content creation activity
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{analytics.contentGenerated}</div>
-              <div className="text-sm text-green-700 dark:text-green-300">Posts Generated</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{analytics.ideasGenerated}</div>
-              <div className="text-sm text-blue-700 dark:text-blue-300">Ideas Generated</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">
-                {Math.round(((analytics.contentGenerated + analytics.ideasGenerated) / 30) * 100) || 0}%
+      {/* Performance Insights - Only show if there's data */}
+      {hasAnyData && (
+        <Card className="border-l-4 border-l-orange-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-orange-600" />
+              Performance Insights
+            </CardTitle>
+            <CardDescription>
+              Key insights about your LinkedIn content strategy
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                <h4 className="font-medium text-orange-800 dark:text-orange-300 mb-2">📈 Content Activity</h4>
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  You've created {analytics.totalPosts} posts and generated {analytics.contentGenerated} pieces of content using AI.
+                </p>
               </div>
-              <div className="text-sm text-purple-700 dark:text-purple-300">Productivity Boost</div>
+              
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">🎯 Recommendations</h4>
+                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                  <li>• Post consistently 3-5 times per week for optimal engagement</li>
+                  <li>• Use AI-generated content to maintain quality and save time</li>
+                  <li>• Schedule posts during peak hours (9-10 AM, 12-1 PM)</li>
+                  <li>• Connect LinkedIn to track real engagement metrics</li>
+                </ul>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Performance Insights */}
-      <Card className="border-l-4 border-l-orange-500">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-600" />
-            Performance Insights
-          </CardTitle>
-          <CardDescription>
-            Key insights about your LinkedIn content strategy
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-              <h4 className="font-medium text-orange-800 dark:text-orange-300 mb-2">📈 Growth Trend</h4>
-              <p className="text-sm text-orange-700 dark:text-orange-300">
-                Your content creation has increased by {Math.floor(Math.random() * 50) + 10}% this month compared to last month.
-              </p>
-            </div>
-            
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">💡 Best Performing Content</h4>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                {analytics.topPerformingPost || "Create your first post to see performance insights!"}
-              </p>
-            </div>
-
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <h4 className="font-medium text-green-800 dark:text-green-300 mb-2">🎯 Recommendations</h4>
-              <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
-                <li>• Post consistently 3-5 times per week for optimal engagement</li>
-                <li>• Use AI-generated content to maintain quality and save time</li>
-                <li>• Schedule posts during peak hours (9-10 AM, 12-1 PM)</li>
-                <li>• Include personal stories and industry insights for better reach</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
