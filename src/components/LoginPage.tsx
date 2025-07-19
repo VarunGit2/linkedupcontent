@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { LinkedInLogin } from '@/components/LinkedInLogin';
 
 interface LoginPageProps {
   onLogin: (userData: { email: string; name: string }) => void;
@@ -198,6 +199,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               >
                 {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Create Account')}
               </Button>
+              
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+              
+              <LinkedInLogin />
             </form>
             
             <div className="mt-4 text-center">
