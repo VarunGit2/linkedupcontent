@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
 
@@ -9,33 +8,27 @@ export const LinkedInLogin: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
-  const loginWithLinkedIn = async () => {
+  const loginWithLinkedIn = () => {
     setIsConnecting(true);
     
     try {
-      const currentDomain = window.location.origin;
+      const client_id = "861wh2zryqucm1";
+      const redirect_uri = "https://preview--linkedupcontent.lovable.app/";
+      const state = crypto.randomUUID();
+      const scope = "openid profile email w_member_social";
+
+      // Store state for verification
+      localStorage.setItem('linkedin-oauth-state', state);
       
-      const { data, error } = await supabase.functions.invoke('linkedin-auth', {
-        body: {
-          action: 'getAuthUrl',
-          redirectUri: currentDomain
-        }
-      });
+      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
+        `response_type=code&` +
+        `client_id=${client_id}&` +
+        `redirect_uri=${encodeURIComponent(redirect_uri)}&` +
+        `state=${state}&` +
+        `scope=${encodeURIComponent(scope)}`;
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data?.authUrl && data?.state) {
-        // Store state for verification
-        localStorage.setItem('linkedin-oauth-state', data.state);
-        localStorage.setItem('linkedin-redirect-uri', data.redirectUri);
-        
-        // Redirect to LinkedIn OAuth
-        window.location.href = data.authUrl;
-      } else {
-        throw new Error('Failed to get LinkedIn authorization URL');
-      }
+      // Redirect to LinkedIn OAuth
+      window.location.href = authUrl;
     } catch (error) {
       console.error('LinkedIn connection error:', error);
       toast({
@@ -43,7 +36,6 @@ export const LinkedInLogin: React.FC = () => {
         description: "Unable to connect to LinkedIn. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsConnecting(false);
     }
   };

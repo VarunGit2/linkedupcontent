@@ -166,108 +166,89 @@ function getAdvancedSystemPrompt(type: string, tone: string, length: string, foc
   if (type === 'ideas') {
     return `You are an expert LinkedIn content strategist who creates viral, engaging post ideas.
 
-CRITICAL INSTRUCTIONS:
-- Generate ONLY the exact number of post ideas requested
-- Each idea must be completely unique and different
-- Write natural, conversational post concepts
-- Focus on specific, actionable content ideas
-- Never repeat the user's request or use template language
-- Format as a clean numbered list
+Generate EXACTLY the requested number of LinkedIn post ideas. Each idea must be:
+- Specific and actionable (never generic)
+- Designed to get comments and engagement 
+- Include a clear hook or angle
+- 15-30 words describing exactly what the post would cover
 
-QUALITY STANDARDS:
-- Each idea should be a complete post concept, not a vague topic
-- Include specific angles, hooks, or frameworks
-- Make each idea engagement-worthy and conversation-starting
-- Avoid generic business advice - be specific and contrarian
+Format: Return ONLY a numbered list (1., 2., 3., etc.)
 
-DO NOT:
-- Include phrases like "Generate X ideas" or "Here are X ideas"
-- Use placeholder text or brackets
-- Repeat similar concepts
-- Write meta-commentary about the ideas`;
+Examples of GOOD ideas:
+1. Share the 3 biggest hiring mistakes you made as a first-time manager and what they taught you
+2. Break down your exact morning routine that helped you close 40% more deals this quarter
+3. Compare remote work productivity tips from 2020 vs 2024 - what actually works now
+
+Examples of BAD ideas (too generic):
+- Share productivity tips
+- Talk about leadership lessons
+- Discuss industry trends
+
+Be specific about what someone would actually write about, not vague topics.`;
   }
 
-  return `You are an expert LinkedIn content creator who writes viral, engaging posts that get thousands of likes and shares.
+  return `You are an expert LinkedIn content creator who writes viral posts.
 
-YOUR EXPERTISE:
-- You understand what makes LinkedIn content go viral
-- You write with authenticity and personal insight
-- You create content that sparks meaningful conversations
-- You avoid corporate jargon and template language
+Write a ${length === 'short' ? '150-250 word' : length === 'medium' ? '400-600 word' : '800+ word'} LinkedIn post with a ${tone} tone.
 
-CRITICAL INSTRUCTIONS:
-- Write a complete, ready-to-publish LinkedIn post
-- Use natural, conversational language
-- Include specific insights, data, or personal experience
-- Create content that feels authentic, not AI-generated
-- Focus on the EXACT topic provided by the user
+Structure:
+• Strong hook (first line grabs attention)
+• Main content with specific examples/data/stories  
+• Clear takeaways or actionable advice
+• Engaging question/CTA for comments
 
-TONE: ${tone}
-LENGTH: ${length === 'short' ? '150-250 words' : length === 'medium' ? '400-600 words' : '800+ words'}
-FOCUS: ${focus}
+Requirements:
+- Use "I" statements and personal experience when relevant
+- Include specific numbers, percentages, or concrete examples
+- Add strategic emojis (2-4 max) 
+- Break up text with bullet points or numbered lists
+- End with a question that invites responses
+- Make it feel authentic and conversation-worthy
+- Focus on the exact topic provided
+- Avoid generic advice - be specific and actionable
 
-AVOID:
-- Template language or placeholder text
-- Repeating the user's request
-- Generic business advice
-- Obvious or surface-level insights
-- Corporate buzzwords
-
-INCLUDE:
-- Specific examples or data points
-- Personal insights or contrarian takes
-- Clear, actionable advice
-- Engaging hooks and questions
-- Professional emojis for readability`;
+Style: ${focus === 'thought-leadership' ? 'Thought leadership with contrarian insights' : 
+      focus === 'personal-story' ? 'Personal story with vulnerability and lessons' :
+      focus === 'industry-insights' ? 'Data-driven with specific examples' :
+      focus === 'tips-advice' ? 'Actionable frameworks with steps' :
+      'Professional and engaging with practical value'}`;
 }
 
 function buildAdvancedUserPrompt(prompt: string, type: string, tone: string, length: string, focus: string, industry: string, audience: string, interests: string, ideaCount: number): string {
   if (type === 'ideas') {
-    const contextInfo = [
-      industry && `Industry: ${industry}`,
-      audience && `Target audience: ${audience}`,
-      interests && `Key interests: ${interests}`
-    ].filter(Boolean).join('\n');
+    let context = `Topic: ${prompt}`;
+    if (industry) context += `\nIndustry: ${industry}`;
+    if (audience) context += `\nAudience: ${audience}`;  
+    if (interests) context += `\nInterests: ${interests}`;
 
-    return `Create ${ideaCount} unique LinkedIn post ideas about: "${prompt}"
+    return `${context}
 
-${contextInfo}
+Generate ${ideaCount} specific LinkedIn post ideas.
 
-Requirements:
-- Each idea should be a complete post concept with a specific angle
-- Include contrarian takes, personal insights, or data-driven approaches
-- Make each idea engaging and conversation-worthy
-- Focus specifically on "${prompt}" - don't be generic
-- Write each idea as if it's a compelling post headline or hook
+Each idea should describe exactly what someone would write about, not just a vague topic.
 
-Example format:
-1. [Specific contrarian insight about the topic] - Share your experience with [specific framework/approach] and why it changed your perspective on [topic]
-2. [Data-driven angle] - Break down the numbers behind [topic] and what it means for [audience]
-
-Generate ${ideaCount} ideas now:`;
+Examples:
+1. Share the worst career advice you received early on and why it set you back 2 years
+2. Break down the exact 4-step process you use to prioritize tasks when everything feels urgent
+3. Compare how client expectations have changed from 2020 to 2024 with specific examples`;
   }
 
-  const contextInfo = [
-    industry && `Industry context: ${industry}`,
-    audience && `Target audience: ${audience}`,
-    interests && `Related interests: ${interests}`
-  ].filter(Boolean).join('\n');
+  let context = `Topic: ${prompt}`;
+  if (industry) context += `\nIndustry: ${industry}`;
+  if (audience) context += `\nAudience: ${audience}`;
+  if (interests) context += `\nInterests: ${interests}`;
 
-  return `Write a compelling LinkedIn post about: "${prompt}"
+  return `${context}
 
-${contextInfo}
+Write a LinkedIn post about: "${prompt}"
 
-Requirements:
-- Write about the specific topic: "${prompt}"
-- Create original, engaging content that sounds natural and authentic
-- Include specific insights, examples, or personal experience
-- Use emojis strategically for readability
-- End with an engaging question to spark discussion
-- Make it feel like it's written by a real professional, not AI
+Make it specific, authentic, and engaging. Include real examples or insights, not generic advice.
 
-The post should be ${length} length with a ${tone} tone, focusing on ${focus}.
+Focus: ${focus}
+Tone: ${tone}  
+Length: ${length}
 
-Write the complete LinkedIn post now:`;
+Write the complete post now:`;
 }
 
 function isLowQualityContent(content: string, originalPrompt: string): boolean {
