@@ -8,27 +8,36 @@ export const LinkedInLogin: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
-  const loginWithLinkedIn = () => {
+  const loginWithLinkedIn = async () => {
     setIsConnecting(true);
     
     try {
-      const client_id = "861wh2zryqucm1";
-      const redirect_uri = "https://preview--linkedupcontent.lovable.app/";
-      const state = crypto.randomUUID();
-      const scope = "openid profile email w_member_social";
-
-      // Store state for verification
-      localStorage.setItem('linkedin-oauth-state', state);
+      // Use the edge function to get the proper OAuth URL
+      const redirectUri = window.location.origin;
       
-      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
-        `response_type=code&` +
-        `client_id=${client_id}&` +
-        `redirect_uri=${encodeURIComponent(redirect_uri)}&` +
-        `state=${state}&` +
-        `scope=${encodeURIComponent(scope)}`;
+      const response = await fetch('https://spxuaduwrfnbdjfwdfys.supabase.co/functions/v1/linkedin-auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'getAuthUrl',
+          redirectUri: redirectUri
+        }),
+      });
 
-      // Redirect to LinkedIn OAuth
-      window.location.href = authUrl;
+      const data = await response.json();
+      
+      if (data.success) {
+        // Store state for verification
+        localStorage.setItem('linkedin-oauth-state', data.state);
+        localStorage.setItem('linkedin-redirect-uri', data.redirectUri);
+        
+        // Redirect to LinkedIn OAuth
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error(data.error || 'Failed to get auth URL');
+      }
     } catch (error) {
       console.error('LinkedIn connection error:', error);
       toast({
