@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const LinkedInLogin: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -12,37 +13,27 @@ export const LinkedInLogin: React.FC = () => {
     setIsConnecting(true);
     
     try {
-      // Use the edge function to get the proper OAuth URL
-      const redirectUri = window.location.origin;
-      
-      const response = await fetch('https://spxuaduwrfnbdjfwdfys.supabase.co/functions/v1/linkedin-auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'getAuthUrl',
-          redirectUri: redirectUri
-        }),
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'linkedin_oidc',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
       });
 
-      const data = await response.json();
-      
-      if (data.success) {
-        // Store state for verification
-        localStorage.setItem('linkedin-oauth-state', data.state);
-        localStorage.setItem('linkedin-redirect-uri', data.redirectUri);
-        
-        // Redirect to LinkedIn OAuth
-        window.location.href = data.authUrl;
-      } else {
-        throw new Error(data.error || 'Failed to get auth URL');
+      if (error) {
+        throw error;
       }
-    } catch (error) {
+
+      // OAuth flow will redirect to LinkedIn
+      toast({
+        title: "Redirecting to LinkedIn",
+        description: "Please complete the authentication process.",
+      });
+    } catch (error: any) {
       console.error('LinkedIn connection error:', error);
       toast({
         title: "Connection Failed",
-        description: "Unable to connect to LinkedIn. Please try again.",
+        description: error.message || "Unable to connect to LinkedIn. Please try again.",
         variant: "destructive",
       });
       setIsConnecting(false);
