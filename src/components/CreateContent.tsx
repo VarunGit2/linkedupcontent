@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -145,7 +144,7 @@ const CreateContent: React.FC = () => {
   };
 
   const getQualityBadge = () => {
-    const badges = {
+    const badges: { [key: string]: { color: string; text: string; desc: string } } = {
       premium: { color: 'bg-gradient-to-r from-purple-600 to-pink-600', text: '🚀 Premium AI', desc: 'Groq Llama 70B' },
       high: { color: 'bg-gradient-to-r from-blue-600 to-indigo-600', text: '✨ High Quality', desc: 'OpenAI GPT-4o-mini' },
       good: { color: 'bg-gradient-to-r from-green-600 to-emerald-600', text: '👍 Good', desc: 'Enhanced Template' }
